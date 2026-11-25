@@ -1,0 +1,4406 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Lost Island: Merge Survival</title>
+<style>
+  :root {
+    --bg-sky-top: #1b6ca8;
+    --bg-sky-mid: #38a3a5;
+    --bg-ocean: #0f4c75;
+    --sand-light: #f6e3ba;
+    --sand-dark: #dfb97a;
+    --wood-dark: #4a2e1b;
+    --wood-mid: #6e472b;
+    --wood-light: #96643e;
+    --gold: #f5b727;
+    --green-btn: #2ec4b6;
+    --green-btn-dark: #1d8a80;
+    --orange-btn: #ff9f1c;
+    --orange-btn-dark: #c97300;
+    --red-alert: #ff4d4d;
+    --cell-size: 64px;
+    --board-gap: 8px;
+    --board-pad: 8px;
+    --board-border: 3px;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    touch-action: none;
+    overscroll-behavior: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: linear-gradient(180deg, var(--bg-sky-top) 0%, var(--bg-sky-mid) 45%, var(--bg-ocean) 100%);
+    color: #fff;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 480px;
+    height: 100dvh;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: max(6px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom)) 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ÜST KAYNAK BARI */
+  .top-bar-row {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+
+  .top-bar {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .audio-toggle-btn {
+    flex: 0 0 auto;
+    width: 38px;
+    min-height: 44px;
+    background: rgba(34, 21, 12, 0.88);
+    border: 2px solid #8c5a32;
+    border-radius: 12px;
+    color: #ffe8a3;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.35);
+    transition: transform 0.08s, border-color 0.15s, background-color 0.15s;
+    touch-action: manipulation;
+  }
+
+  .audio-toggle-btn:active {
+    transform: translateY(2px);
+  }
+
+  .audio-toggle-btn.muted {
+    border-color: #6c584c;
+    color: #b8a99a;
+    background: rgba(24, 16, 10, 0.88);
+  }
+
+  .audio-popover {
+    position: fixed;
+    top: calc(max(6px, env(safe-area-inset-top)) + 52px);
+    right: max(10px, calc((100vw - min(100vw, 480px)) / 2 + 10px));
+    width: min(278px, calc(100vw - 20px));
+    background: linear-gradient(180deg, rgba(54, 33, 19, 0.97), rgba(30, 18, 10, 0.98));
+    border: 2px solid #c68b59;
+    border-radius: 16px;
+    padding: 12px;
+    z-index: 320;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.6);
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    touch-action: auto;
+  }
+
+  .audio-popover.open {
+    display: flex;
+  }
+
+  .audio-pop-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 800;
+    color: #ffe8a3;
+    border-bottom: 1px solid rgba(255, 214, 153, 0.18);
+    padding-bottom: 6px;
+  }
+
+  .audio-master-btn {
+    border: 1.5px solid #80ffdb;
+    background: linear-gradient(180deg, #2ec4b6, #1d8a80);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .audio-master-btn.off {
+    border-color: #adb5bd;
+    background: linear-gradient(180deg, #6c757d, #495057);
+  }
+
+  .audio-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 10px;
+    padding: 7px 8px;
+  }
+
+  .audio-row-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .audio-ch-toggle {
+    border: 1px solid #c68b59;
+    background: rgba(245, 183, 39, 0.22);
+    color: #ffe8a3;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .audio-ch-toggle.off {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #adb5bd;
+  }
+
+  .audio-slider {
+    width: 100%;
+    height: 18px;
+    margin: 0;
+    accent-color: #f5b727;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .settings-reset-btn {
+    width: 100%;
+    border: 1.5px solid rgba(255, 107, 107, 0.55);
+    background: rgba(128, 15, 47, 0.42);
+    color: #ffccd5;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 7px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform 0.08s, background-color 0.15s;
+  }
+
+  .settings-reset-btn:active {
+    transform: translateY(1px);
+  }
+
+  .res-pill {
+    background: rgba(34, 21, 12, 0.85);
+    border: 2px solid #8c5a32;
+    border-radius: 12px;
+    padding: 5px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.35);
+    position: relative;
+  }
+
+  .res-main {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 800;
+    font-size: clamp(12px, 3.4vw, 15px);
+    line-height: 1.1;
+  }
+
+  .res-sub {
+    font-size: 10px;
+    color: #ffd166;
+    font-weight: 600;
+    margin-top: 1px;
+    height: 12px;
+  }
+
+  /* HAYATTA KALMA ÇUBUKLARI (SAĞLIK, AÇLIK, SUSUZLUK) */
+  .survival-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 5px;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+
+  .stat-card {
+    background: rgba(24, 16, 10, 0.84);
+    border: 1.5px solid #7a4e2b;
+    border-radius: 10px;
+    padding: 4px 7px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    transition: border-color 0.25s, box-shadow 0.25s;
+  }
+
+  .stat-card.critical {
+    border-color: var(--red-alert);
+    animation: criticalPulse 1s infinite alternate;
+  }
+
+  @keyframes criticalPulse {
+    from { box-shadow: 0 0 4px rgba(255, 77, 77, 0.35); }
+    to { box-shadow: 0 0 12px rgba(255, 77, 77, 0.9); }
+  }
+
+  .stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .stat-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.16);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .stat-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.25s ease;
+  }
+
+  .fill-health { background: linear-gradient(90deg, #e63946, #ff6b6b); }
+  .fill-hunger { background: linear-gradient(90deg, #e07a22, #f4a261); }
+  .fill-thirst { background: linear-gradient(90deg, #0077b6, #48cae4); }
+
+  /* TROPİK ADA SAHNESİ */
+  .island-stage {
+    position: relative;
+    width: 100%;
+    height: clamp(92px, 17vh, 160px);
+    margin: 5px 0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #4ea8de 0%, #56cfe1 58%, #0077b6 58%, #023e8a 100%);
+    border: 2px solid rgba(255,255,255,0.28);
+    box-shadow: inset 0 -10px 20px rgba(0,0,0,0.25), 0 4px 10px rgba(0,0,0,0.3);
+    flex-shrink: 0;
+  }
+
+  .sun {
+    position: absolute;
+    top: 10px;
+    right: 18px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff3b0 20%, #ffd166 70%, rgba(255,209,102,0) 100%);
+    box-shadow: 0 0 18px #ffd166;
+  }
+
+  .cloud {
+    position: absolute;
+    background: rgba(255,255,255,0.75);
+    border-radius: 20px;
+    height: 10px;
+    animation: drift 24s linear infinite;
+  }
+
+  @keyframes drift {
+    from { transform: translateX(-60px); }
+    to { transform: translateX(480px); }
+  }
+
+  .ocean-waves {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 42%;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0.08) 0px,
+      rgba(255,255,255,0.08) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+  }
+
+  .island-mound {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 82%;
+    height: 56%;
+    background: radial-gradient(ellipse at center top, var(--sand-light) 0%, var(--sand-dark) 80%, #c49a5b 100%);
+    border-radius: 50% 50% 42% 42% / 65% 65% 35% 35%;
+    box-shadow: 0 6px 0 #1b6ca8, 0 10px 15px rgba(0,0,0,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 18px;
+  }
+
+  .palm-tree {
+    font-size: clamp(26px, 6.5vw, 36px);
+    filter: drop-shadow(0 3px 3px rgba(0,0,0,0.3));
+    transform-origin: bottom center;
+    animation: sway 4s ease-in-out infinite alternate;
+  }
+
+  @keyframes sway {
+    from { transform: rotate(-3deg); }
+    to { transform: rotate(3deg); }
+  }
+
+  .camp-visual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 2;
+    margin-top: -12px;
+  }
+
+  .camp-icon {
+    font-size: clamp(30px, 7.5vw, 42px);
+    filter: drop-shadow(0 4px 4px rgba(0,0,0,0.4));
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .camp-badge {
+    background: rgba(34, 21, 12, 0.88);
+    border: 1px solid var(--gold);
+    color: #ffe8a3;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-top: -2px;
+    white-space: nowrap;
+  }
+
+  /* OYUNCU KARAKTERİ (ADA SAHNESİ) */
+  .castaway-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    z-index: 3;
+    margin-left: 4px;
+    margin-top: -6px;
+    width: clamp(28px, 7.2vw, 38px);
+    height: clamp(34px, 8.8vw, 46px);
+    pointer-events: none;
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+  }
+
+  .castaway-shadow {
+    position: absolute;
+    bottom: 1px;
+    left: 50%;
+    transform: translate3d(-50%, 0, 0);
+    width: 66%;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(24, 14, 6, 0.36);
+    filter: blur(0.6px);
+    animation: castawayShadowPulse 3.2s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+
+  .castaway-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+    transform-origin: 50% 92%;
+    animation: castawayBreathe 3.2s ease-in-out infinite, castawayIdleShift 7.6s ease-in-out infinite;
+    will-change: transform, translate;
+  }
+
+  .castaway-head-group {
+    transform-box: fill-box;
+    transform-origin: 50% 85%;
+    animation: castawayLookAround 9.2s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .castaway-arm-l {
+    transform-box: fill-box;
+    transform-origin: 85% 20%;
+    animation: castawayArmSwingL 3.2s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .castaway-arm-r {
+    transform-box: fill-box;
+    transform-origin: 15% 20%;
+    animation: castawayArmSwingR 3.2s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .castaway-wrap.is-glancing .castaway-svg {
+    animation: castawayBreathe 3.2s ease-in-out infinite, castawayHopCue 1.05s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .castaway-wrap.is-glancing .castaway-head-group {
+    animation: castawayQuickGlance 1.1s ease-in-out;
+  }
+
+  @keyframes castawayBreathe {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) scaleY(1) scaleX(1);
+    }
+    50% {
+      transform: translate3d(0, -1.2px, 0) scaleY(1.032) scaleX(0.985);
+    }
+  }
+
+  @keyframes castawayShadowPulse {
+    0%, 100% {
+      transform: translate3d(-50%, 0, 0) scale(1);
+      opacity: 0.36;
+    }
+    50% {
+      transform: translate3d(-50%, 0, 0) scale(0.92);
+      opacity: 0.27;
+    }
+  }
+
+  @keyframes castawayIdleShift {
+    0%, 42%, 100% {
+      translate: 0px 0px;
+    }
+    48%, 56% {
+      translate: 2px 0px;
+    }
+    64%, 72% {
+      translate: -1.5px 0px;
+    }
+  }
+
+  @keyframes castawayLookAround {
+    0%, 24%, 100% {
+      transform: rotate(0deg) translateX(0px);
+    }
+    30%, 38% {
+      transform: rotate(-7deg) translateX(-0.8px);
+    }
+    46%, 55% {
+      transform: rotate(6.5deg) translateX(0.8px);
+    }
+    62%, 70% {
+      transform: rotate(0deg) translateX(0px);
+    }
+  }
+
+  @keyframes castawayQuickGlance {
+    0% { transform: rotate(0deg) translateX(0px); }
+    25% { transform: rotate(-9deg) translateX(-1px); }
+    65% { transform: rotate(8deg) translateX(1px); }
+    100% { transform: rotate(0deg) translateX(0px); }
+  }
+
+  @keyframes castawayHopCue {
+    0% { transform: translate3d(0, 0, 0) scaleY(1); }
+    35% { transform: translate3d(0, -2.2px, 0) scaleY(1.04); }
+    70% { transform: translate3d(0, 0.6px, 0) scaleY(0.97); }
+    100% { transform: translate3d(0, 0, 0) scaleY(1); }
+  }
+
+  @keyframes castawayArmSwingL {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(4deg); }
+  }
+
+  @keyframes castawayArmSwingR {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(-4deg); }
+  }
+
+  .floating-text {
+    position: absolute;
+    font-weight: 900;
+    font-size: 14px;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 60;
+    animation: floatUp 0.95s ease-out forwards;
+  }
+
+  @keyframes floatUp {
+    0% { opacity: 1; transform: translateY(0) scale(0.9); }
+    100% { opacity: 0; transform: translateY(-34px) scale(1.12); }
+  }
+
+  /* 4x4 BİRLEŞTİRME TAHTASI */
+  .board-wrapper {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(4, var(--cell-size));
+    grid-template-rows: repeat(4, var(--cell-size));
+    gap: var(--board-gap);
+    background: linear-gradient(145deg, var(--wood-mid), var(--wood-dark));
+    padding: var(--board-pad);
+    border-radius: 18px;
+    border: var(--board-border) solid #9c6b43;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.45), inset 0 2px 4px rgba(255,255,255,0.2);
+    touch-action: none;
+    flex-shrink: 0;
+  }
+
+  .cell {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    background: rgba(35, 20, 10, 0.55);
+    border-radius: 12px;
+    border: 1.5px solid rgba(255, 214, 153, 0.16);
+    box-shadow: inset 0 3px 6px rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: transform 0.12s, background-color 0.15s, border-color 0.15s;
+  }
+
+  .cell.highlight-merge {
+    background: rgba(46, 196, 182, 0.35);
+    border-color: #2ec4b6;
+    transform: scale(1.04);
+  }
+
+  .cell.highlight-move {
+    background: rgba(255, 209, 102, 0.25);
+    border-color: #ffd166;
+  }
+
+  .item {
+    width: 88%;
+    height: 88%;
+    border-radius: 11px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.45);
+    transition: transform 0.15s ease;
+    pointer-events: none;
+  }
+
+  .item.dragging-source {
+    opacity: 0.3;
+    transform: scale(0.9);
+  }
+
+  .item.pop-anim {
+    animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes popIn {
+    0% { transform: scale(0.4); }
+    100% { transform: scale(1); }
+  }
+
+  .item-wood { background: linear-gradient(145deg, #8d5b34, #5c381c); border: 1.5px solid #c68b59; }
+  .item-stone { background: linear-gradient(145deg, #7d8597, #495057); border: 1.5px solid #adb5bd; }
+  .item-food { background: linear-gradient(145deg, #e07a22, #9c4a08); border: 1.5px solid #f4a261; }
+  .item-water { background: linear-gradient(145deg, #0096c7, #023e8a); border: 1.5px solid #90e0ef; }
+
+  .item-emoji {
+    font-size: calc(var(--cell-size) * 0.44);
+    line-height: 1;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35));
+  }
+
+  .item-lvl {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    background: rgba(0,0,0,0.72);
+    color: #ffd166;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 1px 4px;
+    border-radius: 5px;
+  }
+
+  .item-ready-dot {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4cc9f0;
+    box-shadow: 0 0 6px #4cc9f0;
+    animation: pulseDot 1.2s infinite alternate;
+  }
+
+  @keyframes pulseDot {
+    from { transform: scale(0.85); opacity: 0.75; }
+    to { transform: scale(1.2); opacity: 1; }
+  }
+
+  .drag-ghost {
+    position: fixed;
+    width: var(--cell-size);
+    height: var(--cell-size);
+    pointer-events: none;
+    z-index: 999;
+    transform: translate(-50%, -50%) scale(1.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 10px 14px rgba(0,0,0,0.5));
+  }
+
+  /* ALT KISIM: SOLDA OYUNCU SEVİYE YÜKSELTME ALANI + EYLEM BUTONLARI */
+  .bottom-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+
+  .player-level-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: rgba(24, 15, 9, 0.88);
+    border: 1.5px solid #8c5a32;
+    border-radius: 13px;
+    padding: 5px 8px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.35);
+  }
+
+  .player-level-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .player-level-badge {
+    font-size: clamp(11px, 3vw, 12.5px);
+    font-weight: 900;
+    color: #ffe8a3;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+
+  .player-level-req {
+    font-size: clamp(10px, 2.7vw, 11px);
+    font-weight: 700;
+    color: #ffd166;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+
+  .player-level-req .req-ok {
+    color: #80ffdb;
+  }
+
+  .player-level-req .req-lack {
+    color: #ff8fa3;
+  }
+
+  .btn-player-levelup {
+    flex: 0 0 auto;
+    border: 1.5px solid #ffe8a3;
+    border-radius: 11px;
+    padding: 6px 10px;
+    background: linear-gradient(180deg, #f5b727, #c97300);
+    color: #fff;
+    font-size: clamp(10.5px, 2.9vw, 12px);
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.35);
+    transition: transform 0.08s, filter 0.15s;
+    touch-action: manipulation;
+    white-space: nowrap;
+  }
+
+  .btn-player-levelup:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.35);
+  }
+
+  .btn-player-levelup:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+    filter: grayscale(0.45);
+    border-color: rgba(255, 232, 163, 0.35);
+  }
+
+  /* ALT EYLEM BUTONLARI */
+  .controls {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1.2fr;
+    gap: 8px;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+
+  .btn {
+    border: none;
+    border-radius: 14px;
+    padding: 9px 6px;
+    color: #fff;
+    font-weight: 800;
+    font-size: clamp(12px, 3.3vw, 14px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.35);
+    transition: transform 0.08s, filter 0.15s;
+    touch-action: manipulation;
+  }
+
+  .btn:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.35);
+  }
+
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    filter: grayscale(0.4);
+  }
+
+  .btn-explore {
+    background: linear-gradient(180deg, var(--green-btn), var(--green-btn-dark));
+    border: 1.5px solid #80ffdb;
+  }
+
+  .btn-rest {
+    background: linear-gradient(180deg, #4ea8de, #277da1);
+    border: 1.5px solid #90e0ef;
+  }
+
+  .btn-upgrade {
+    background: linear-gradient(180deg, var(--orange-btn), var(--orange-btn-dark));
+    border: 1.5px solid #ffd166;
+  }
+
+  .btn-sub {
+    font-size: 10px;
+    font-weight: 700;
+    opacity: 0.92;
+    margin-top: 2px;
+  }
+
+  /* BİLDİRİM TOAST */
+  .toast {
+    position: fixed;
+    top: 14%;
+    left: 50%;
+    transform: translate(-50%, -10px);
+    background: rgba(24, 15, 9, 0.92);
+    border: 1.5px solid var(--gold);
+    color: #fff;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 200;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.45);
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  /* OYUN BİTİŞ EKRANI (MODAL) */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 22, 0.84);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    padding: 20px;
+  }
+
+  .modal-backdrop.active {
+    display: flex;
+  }
+
+  .modal-card {
+    width: 100%;
+    max-width: 340px;
+    background: linear-gradient(180deg, #3d2516, #24140b);
+    border: 2.5px solid #c68b59;
+    border-radius: 22px;
+    padding: 22px 18px;
+    text-align: center;
+    box-shadow: 0 14px 35px rgba(0,0,0,0.65);
+  }
+
+  .modal-icon {
+    font-size: 46px;
+    margin-bottom: 6px;
+  }
+
+  .modal-title {
+    font-size: 22px;
+    font-weight: 900;
+    color: #ff6b6b;
+    margin: 0 0 8px 0;
+  }
+
+  .modal-desc {
+    font-size: 13px;
+    color: #f1dca7;
+    line-height: 1.45;
+    margin: 0 0 16px 0;
+  }
+
+  .modal-stats {
+    background: rgba(0,0,0,0.35);
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: #ffd166;
+    display: flex;
+    justify-content: space-around;
+    font-weight: 700;
+  }
+
+  .btn-restart {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #ff595e, #c9184a);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #800f2f;
+  }
+
+  .btn-restart:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #800f2f;
+  }
+
+  /* SIFIRLAMA ONAY PENCERESİ */
+  .reset-confirm-card {
+    width: 100%;
+    max-width: 340px;
+    background: linear-gradient(180deg, #422817, #221208);
+    border: 2.5px solid #c68b59;
+    border-radius: 22px;
+    padding: 20px 18px;
+    text-align: center;
+    box-shadow: 0 16px 38px rgba(0,0,0,0.75);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .reset-confirm-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 900;
+    color: #ffe8a3;
+    line-height: 1.35;
+  }
+
+  .reset-confirm-warn {
+    margin: 0;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #ff8fa3;
+  }
+
+  .reset-confirm-actions {
+    display: grid;
+    grid-template-columns: 1fr 1.25fr;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .btn-reset-cancel {
+    border: 1.5px solid #c68b59;
+    border-radius: 13px;
+    padding: 10px 8px;
+    background: linear-gradient(180deg, #6e472b, #4a2e1b);
+    color: #ffe8a3;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.35);
+    touch-action: manipulation;
+  }
+
+  .btn-reset-cancel:active {
+    transform: translateY(2px);
+  }
+
+  .btn-reset-confirm {
+    border: 1.5px solid #ff8fa3;
+    border-radius: 13px;
+    padding: 10px 8px;
+    background: linear-gradient(180deg, #ff595e, #c9184a);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #800f2f;
+    touch-action: manipulation;
+  }
+
+  .btn-reset-confirm:active {
+    transform: translateY(2px);
+  }
+
+  /* ADA SAHNESİ YENİ YAPILAR (KAMP ATEŞİ & SU KUYUSU) */
+  .camp-structures-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 3px;
+  }
+
+  .structure-chip {
+    background: rgba(24, 15, 9, 0.86);
+    border: 1px solid rgba(255, 209, 102, 0.45);
+    border-radius: 8px;
+    padding: 1px 5px;
+    font-size: 9.5px;
+    font-weight: 800;
+    color: #ffe8a3;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.35);
+    transition: transform 0.2s, border-color 0.25s, box-shadow 0.25s;
+  }
+
+  .structure-chip.fire-active {
+    border-color: #ff9f1c;
+    color: #ffd166;
+    box-shadow: 0 0 8px rgba(255, 159, 28, 0.55);
+  }
+
+  .structure-chip.well-active {
+    border-color: #4cc9f0;
+    color: #caf0f8;
+  }
+
+  .campfire-glow {
+    display: inline-block;
+    animation: campfireFlicker 0.9s ease-in-out infinite alternate;
+  }
+
+  @keyframes campfireFlicker {
+    0% { transform: scale(0.95) rotate(-3deg); filter: drop-shadow(0 0 2px #ff9f1c); }
+    100% { transform: scale(1.12) rotate(3deg); filter: drop-shadow(0 0 6px #ff5400); }
+  }
+
+  /* KAMP GELİŞTİRME MODALI */
+  .camp-modal-card {
+    width: 100%;
+    max-width: 410px;
+    max-height: 86dvh;
+    background: linear-gradient(180deg, #422817, #231309);
+    border: 2.5px solid #c68b59;
+    border-radius: 22px;
+    padding: 14px 14px 16px 14px;
+    box-shadow: 0 16px 38px rgba(0,0,0,0.72);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  .camp-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1.5px solid rgba(255, 214, 153, 0.2);
+    padding-bottom: 8px;
+    flex-shrink: 0;
+  }
+
+  .camp-modal-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 900;
+    color: #ffe8a3;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .camp-modal-res {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    color: #ffd166;
+    background: rgba(0,0,0,0.32);
+    padding: 4px 9px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 209, 102, 0.28);
+  }
+
+  .camp-modal-close {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    border: 1.5px solid #c68b59;
+    background: rgba(0,0,0,0.35);
+    color: #ffe8a3;
+    font-size: 15px;
+    font-weight: 900;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+  }
+
+  .camp-modal-close:active {
+    transform: scale(0.94);
+  }
+
+  .camp-structures-list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    overflow-y: auto;
+    padding-right: 2px;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .struct-card {
+    background: rgba(20, 12, 7, 0.68);
+    border: 1.5px solid #8c5a32;
+    border-radius: 15px;
+    padding: 10px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .struct-card.locked {
+    opacity: 0.72;
+    border-color: #5c402c;
+  }
+
+  .struct-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .struct-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .struct-icon {
+    font-size: 26px;
+    line-height: 1;
+    flex-shrink: 0;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.45));
+  }
+
+  .struct-name {
+    font-size: 14px;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.15;
+  }
+
+  .struct-lvl-badge {
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #ffd166;
+    margin-top: 1px;
+  }
+
+  .struct-status-pill {
+    font-size: 10.5px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.1);
+    color: #e9ecef;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .struct-status-pill.active {
+    background: rgba(46, 196, 182, 0.25);
+    border: 1px solid #2ec4b6;
+    color: #80ffdb;
+  }
+
+  .struct-status-pill.burning {
+    background: rgba(255, 159, 28, 0.25);
+    border: 1px solid #ff9f1c;
+    color: #ffd166;
+  }
+
+  .struct-status-pill.locked {
+    background: rgba(255, 77, 77, 0.18);
+    border: 1px solid rgba(255, 77, 77, 0.45);
+    color: #ffadad;
+  }
+
+  .struct-desc {
+    font-size: 11.5px;
+    color: #f1dca7;
+    line-height: 1.35;
+  }
+
+  .struct-perk {
+    font-size: 11px;
+    font-weight: 700;
+    color: #80ffdb;
+    background: rgba(46, 196, 182, 0.12);
+    border-radius: 8px;
+    padding: 4px 8px;
+  }
+
+  .struct-progress-wrap {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .struct-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+
+  .fill-fire {
+    background: linear-gradient(90deg, #ff5400, #ffbd00);
+  }
+
+  .fill-well {
+    background: linear-gradient(90deg, #0096c7, #48cae4);
+  }
+
+  .struct-action-btn {
+    width: 100%;
+    border: none;
+    border-radius: 11px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 900;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.35);
+    transition: transform 0.08s, filter 0.15s;
+    touch-action: manipulation;
+  }
+
+  .struct-action-btn:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.35);
+  }
+
+  .struct-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(0.45);
+  }
+
+  .btn-struct-shelter {
+    background: linear-gradient(180deg, #ff9f1c, #c97300);
+    border: 1px solid #ffd166;
+  }
+
+  .btn-struct-fire {
+    background: linear-gradient(180deg, #f77f00, #d62828);
+    border: 1px solid #fcbf49;
+  }
+
+  .btn-struct-well {
+    background: linear-gradient(180deg, #0096c7, #023e8a);
+    border: 1px solid #90e0ef;
+  }
+
+  /* GÜNLÜK GİRİŞ ÖDÜLÜ MODALI */
+  .daily-modal-card {
+    width: 100%;
+    max-width: 340px;
+    background: linear-gradient(180deg, #422817, #221208);
+    border: 2.5px solid var(--gold);
+    border-radius: 22px;
+    padding: 20px 18px;
+    text-align: center;
+    box-shadow: 0 16px 38px rgba(0,0,0,0.72);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .daily-reward-box {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1.5px solid rgba(255, 209, 102, 0.35);
+    border-radius: 14px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #ffe8a3;
+  }
+
+  .btn-daily-claim {
+    width: 100%;
+    padding: 11px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(180deg, var(--green-btn), var(--green-btn-dark));
+    border: 1.5px solid #80ffdb;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.35);
+    touch-action: manipulation;
+  }
+
+  .btn-daily-claim:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.35);
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- ÜST KAYNAK BARI -->
+  <div class="top-bar-row">
+    <div class="top-bar" id="topBar">
+      <div class="res-pill">
+        <div class="res-main">⚡ <span id="energyVal">50</span>/<span id="maxEnergyVal">50</span></div>
+        <div class="res-sub" id="energyTimer">Dolu</div>
+      </div>
+      <div class="res-pill">
+        <div class="res-main">🪵 <span id="woodVal">0</span></div>
+        <div class="res-sub">Odun</div>
+      </div>
+      <div class="res-pill">
+        <div class="res-main">🪨 <span id="stoneVal">0</span></div>
+        <div class="res-sub">Taş</div>
+      </div>
+      <div class="res-pill">
+        <div class="res-main">⛺ Sv.<span id="campLvlVal">1</span></div>
+        <div class="res-sub" id="campNameSub">Barınak</div>
+      </div>
+    </div>
+    <button type="button" class="audio-toggle-btn" id="audioToggleBtn" aria-label="Ses Ayarları" title="Ses Ayarları">🔊</button>
+  </div>
+
+  <div class="audio-popover" id="audioPopover" role="dialog" aria-label="Ses Ayarları">
+    <div class="audio-pop-header">
+      <span>🎚️ Ses Sistemi</span>
+      <button type="button" class="audio-master-btn" id="audioMasterBtn">Açık</button>
+    </div>
+    <div class="audio-row">
+      <div class="audio-row-top">
+        <span>🌊 Ortam Sesi</span>
+        <button type="button" class="audio-ch-toggle" id="ambientToggleBtn">Açık</button>
+      </div>
+      <input type="range" class="audio-slider" id="ambientVolumeSlider" min="0" max="100" value="35" aria-label="Ortam Sesi Seviyesi">
+    </div>
+    <div class="audio-row">
+      <div class="audio-row-top">
+        <span>✨ Efekt Sesi</span>
+        <button type="button" class="audio-ch-toggle" id="sfxToggleBtn">Açık</button>
+      </div>
+      <input type="range" class="audio-slider" id="sfxVolumeSlider" min="0" max="100" value="75" aria-label="Efekt Sesi Seviyesi">
+    </div>
+    <button type="button" class="settings-reset-btn" id="btnOpenResetModal">🔄 Oyunu Sıfırla</button>
+  </div>
+
+  <!-- HAYATTA KALMA GÖSTERGELERİ -->
+  <div class="survival-bar" id="survivalBar">
+    <div class="stat-card" id="healthCard">
+      <div class="stat-header">
+        <span>❤️ Sağlık</span>
+        <span id="healthVal">100</span>
+      </div>
+      <div class="stat-track">
+        <div class="stat-fill fill-health" id="healthBarFill" style="width: 100%;"></div>
+      </div>
+    </div>
+    <div class="stat-card" id="hungerCard">
+      <div class="stat-header">
+        <span>🍖 Açlık</span>
+        <span id="hungerVal">100</span>
+      </div>
+      <div class="stat-track">
+        <div class="stat-fill fill-hunger" id="hungerBarFill" style="width: 100%;"></div>
+      </div>
+    </div>
+    <div class="stat-card" id="thirstCard">
+      <div class="stat-header">
+        <span>💧 Susuzluk</span>
+        <span id="thirstVal">100</span>
+      </div>
+      <div class="stat-track">
+        <div class="stat-fill fill-thirst" id="thirstBarFill" style="width: 100%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TROPİK ADA SAHNESİ -->
+  <div class="island-stage" id="islandStage">
+    <div class="sun"></div>
+    <div class="cloud" style="top: 16px; width: 48px; animation-duration: 28s;"></div>
+    <div class="cloud" style="top: 32px; width: 34px; animation-duration: 21s; animation-delay: -9s;"></div>
+    <div class="ocean-waves"></div>
+    <div class="island-mound">
+      <div class="palm-tree">🌴</div>
+      <div class="camp-visual" id="campVisual">
+        <div class="camp-icon" id="campIcon">🏕️</div>
+        <div class="camp-badge" id="campBadge">Sv.1 Basit Çadır</div>
+        <div class="camp-structures-row" id="campStructuresRow">
+          <span class="structure-chip" id="stageFireChip" style="display:none;">🔥 Sönük</span>
+          <span class="structure-chip well-active" id="stageWellChip" style="display:none;">🪣 Sv.1</span>
+        </div>
+      </div>
+      <div class="castaway-wrap" id="castawayCharacter" aria-hidden="true">
+        <div class="castaway-shadow"></div>
+        <svg class="castaway-svg" viewBox="0 0 40 48" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="castawayShirtGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f7b23b"/>
+              <stop offset="100%" stop-color="#cf7b17"/>
+            </linearGradient>
+            <linearGradient id="castawayHatGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f2d08a"/>
+              <stop offset="100%" stop-color="#c6964b"/>
+            </linearGradient>
+            <linearGradient id="castawaySkinGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ffcca3"/>
+              <stop offset="100%" stop-color="#e39f72"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Bacaklar -->
+          <rect x="14.5" y="34.5" width="4.2" height="7.5" rx="2" fill="#4f3522"/>
+          <rect x="21.3" y="34.5" width="4.2" height="7.5" rx="2" fill="#4f3522"/>
+          <ellipse cx="16.4" cy="42.2" rx="3.2" ry="1.8" fill="#2e1c10"/>
+          <ellipse cx="23.4" cy="42.2" rx="3.2" ry="1.8" fill="#2e1c10"/>
+
+          <!-- Sol ve Sağ Kollar -->
+          <g class="castaway-arm-l">
+            <rect x="10.2" y="25.2" width="3.6" height="7.8" rx="1.8" transform="rotate(10 12 25.2)" fill="url(#castawaySkinGrad)"/>
+          </g>
+          <g class="castaway-arm-r">
+            <rect x="26.2" y="25.2" width="3.6" height="7.8" rx="1.8" transform="rotate(-10 28 25.2)" fill="url(#castawaySkinGrad)"/>
+          </g>
+
+          <!-- Gövde / Tişört -->
+          <path d="M13.2 25.5 C13.2 23.8, 15.5 23, 20 23 C24.5 23, 26.8 23.8, 26.8 25.5 L27.6 35.2 L12.4 35.2 Z" fill="url(#castawayShirtGrad)" stroke="#7c4512" stroke-width="1.1"/>
+          <!-- Kemer / Çanta askısı detayı -->
+          <rect x="13" y="32.6" width="14" height="2.4" rx="1" fill="#5c381c"/>
+          <rect x="18.4" y="32.2" width="3.2" height="3.2" rx="0.7" fill="#f5b727"/>
+
+          <!-- Kafa ve Şapka Grubu -->
+          <g class="castaway-head-group">
+            <!-- Yüz -->
+            <ellipse cx="20" cy="17.6" rx="7.4" ry="7.1" fill="url(#castawaySkinGrad)" stroke="#8c5432" stroke-width="1"/>
+            <!-- Yanık / Allık detayı -->
+            <ellipse cx="15.2" cy="19.3" rx="1.8" ry="1.1" fill="#eb8264" opacity="0.55"/>
+            <ellipse cx="24.8" cy="19.3" rx="1.8" ry="1.1" fill="#eb8264" opacity="0.55"/>
+            <!-- Gözler -->
+            <circle cx="17.2" cy="17.6" r="1.45" fill="#23160d"/>
+            <circle cx="22.8" cy="17.6" r="1.45" fill="#23160d"/>
+            <circle cx="17.65" cy="17.1" r="0.52" fill="#ffffff"/>
+            <circle cx="23.25" cy="17.1" r="0.52" fill="#ffffff"/>
+            <!-- Hafif gülümseme -->
+            <path d="M18.3 20.6 Q20 22 21.7 20.6" fill="none" stroke="#6e3b20" stroke-width="1.2" stroke-linecap="round"/>
+
+            <!-- Hasır / Keşif Şapkası -->
+            <ellipse cx="20" cy="13.4" rx="11.5" ry="3.1" fill="url(#castawayHatGrad)" stroke="#7a511e" stroke-width="1.05"/>
+            <path d="M12.6 13.2 C12.8 8.4, 15.6 6.4, 20 6.4 C24.4 6.4, 27.2 8.4, 27.4 13.2 Z" fill="url(#castawayHatGrad)" stroke="#7a511e" stroke-width="1.05"/>
+            <!-- Şapka kurdelesi -->
+            <path d="M12.8 11.7 Q20 13.1 27.2 11.7 L27.3 13.2 Q20 14.5 12.7 13.2 Z" fill="#c94a38"/>
+          </g>
+        </svg>
+      </div>
+      <div class="palm-tree" style="animation-delay: -1.8s;">🌴</div>
+    </div>
+  </div>
+
+  <!-- 4x4 MERGE TAHTASI -->
+  <div class="board-wrapper" id="boardWrapper">
+    <div class="board" id="board"></div>
+  </div>
+
+  <!-- ALT BÖLÜM: OYUNCU SEVİYE YÜKSELTME ALANI + KONTROLLER -->
+  <div class="bottom-section" id="bottomSection">
+    <div class="player-level-row" id="playerLevelPanel">
+      <div class="player-level-info">
+        <div class="player-level-badge">⭐ Oyuncu Sv.<span id="playerLvlBadgeVal">1</span></div>
+        <div class="player-level-req" id="playerLevelReqText">Gerekli: 8🪵 • 6🪨</div>
+      </div>
+      <button type="button" class="btn-player-levelup" id="btnPlayerLevelUp" disabled>SEVİYE ATLA</button>
+    </div>
+
+    <!-- ALT EYLEM BUTONLARI -->
+    <div class="controls" id="controlsBar">
+      <button class="btn btn-explore" id="btnExplore">
+        <span>🧭 Araştır</span>
+        <span class="btn-sub">-2 ⚡ Eşya Bul</span>
+      </button>
+      <button class="btn btn-rest" id="btnRest">
+        <span>🔥 Dinlen</span>
+        <span class="btn-sub" id="restSub">+15 ⚡ Hazır</span>
+      </button>
+      <button class="btn btn-upgrade" id="btnUpgrade">
+        <span>🔨 Kamp Yapıları</span>
+        <span class="btn-sub" id="upgradeSub">Barınak • Ateş • Kuyu</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- OYUNU SIFIRLA ONAY MODALI -->
+<div class="modal-backdrop" id="resetConfirmModal" role="dialog" aria-modal="true" aria-labelledby="resetConfirmTitle">
+  <div class="reset-confirm-card">
+    <div class="modal-icon" style="margin-bottom: 0;">⚠️</div>
+    <h3 class="reset-confirm-title" id="resetConfirmTitle">Oyunun tüm kayıtlı ilerlemesini silmek istediğine emin misin?</h3>
+    <p class="reset-confirm-warn">Bu işlem geri alınamaz.</p>
+    <div class="reset-confirm-actions">
+      <button type="button" class="btn-reset-cancel" id="btnCancelReset">Vazgeç</button>
+      <button type="button" class="btn-reset-confirm" id="btnConfirmReset">Evet, Oyunu Sıfırla</button>
+    </div>
+  </div>
+</div>
+
+<!-- KAMP GELİŞTİRME MODALI -->
+<div class="modal-backdrop" id="campModal">
+  <div class="camp-modal-card">
+    <div class="camp-modal-header">
+      <h3 class="camp-modal-title">⛺ Kamp Geliştirme</h3>
+      <div class="camp-modal-res">
+        <span>🪵 <span id="modalWoodVal">0</span></span>
+        <span>🪨 <span id="modalStoneVal">0</span></span>
+      </div>
+      <button type="button" class="camp-modal-close" id="btnCloseCampModal" aria-label="Kapat">✕</button>
+    </div>
+
+    <div class="camp-structures-list">
+      <!-- 1. BARINAK -->
+      <div class="struct-card" id="shelterCard">
+        <div class="struct-top">
+          <div class="struct-title-wrap">
+            <div class="struct-icon" id="shelterCardIcon">🏕️</div>
+            <div>
+              <div class="struct-name" id="shelterCardName">Barınak • Basit Çadır</div>
+              <div class="struct-lvl-badge" id="shelterCardLvl">Seviye 1 / 6</div>
+            </div>
+          </div>
+          <span class="struct-status-pill active" id="shelterStatusPill">Aktif</span>
+        </div>
+        <div class="struct-desc" id="shelterCardDesc">Açlık ve susuzluk tüketimini yavaşlatır, yeni kamp yapılarının kilidini açar.</div>
+        <div class="struct-perk" id="shelterPerkText">Avantaj: Temel koruma • Sv.2'de Su Kuyusu açılır</div>
+        <button type="button" class="struct-action-btn btn-struct-shelter" id="btnBuildShelter">🔨 Barınağı Geliştir (15🪵 10🪨)</button>
+      </div>
+
+      <!-- 2. KAMP ATEŞİ -->
+      <div class="struct-card" id="campfireCard">
+        <div class="struct-top">
+          <div class="struct-title-wrap">
+            <div class="struct-icon" id="campfireCardIcon">🪵</div>
+            <div>
+              <div class="struct-name">Kamp Ateşi</div>
+              <div class="struct-lvl-badge" id="campfireCardSub">İnşa Edilmedi</div>
+            </div>
+          </div>
+          <span class="struct-status-pill" id="campfireStatusPill">İnşa Bekliyor</span>
+        </div>
+        <div class="struct-desc">Odun ile yakılır ve 3 dakika aktif kalır. Yanarken açlık/susuzluk düşüşünü %30 yavaşlatır ve sağlığı korur.</div>
+        <div class="struct-progress-wrap" id="campfireProgressWrap" style="display:none;">
+          <div class="struct-progress-fill fill-fire" id="campfireProgressFill" style="width: 0%;"></div>
+        </div>
+        <div class="struct-perk" id="campfirePerkText">Durum: İnşa edildiğinde 3 dk sıcak koruma sağlar</div>
+        <button type="button" class="struct-action-btn btn-struct-fire" id="btnActionCampfire">🔥 Kamp Ateşi İnşa Et (12🪵)</button>
+      </div>
+
+      <!-- 3. SU KUYUSU -->
+      <div class="struct-card" id="wellCard">
+        <div class="struct-top">
+          <div class="struct-title-wrap">
+            <div class="struct-icon" id="wellCardIcon">🪣</div>
+            <div>
+              <div class="struct-name">Su Kuyusu</div>
+              <div class="struct-lvl-badge" id="wellCardSub">Kilitli (Barınak Sv.2 Gerekli)</div>
+            </div>
+          </div>
+          <span class="struct-status-pill locked" id="wellStatusPill">🔒 Sv.2 Barınak</span>
+        </div>
+        <div class="struct-desc">Belirli aralıklarla otomatik olarak tahtadaki envantere Çiy Damlası (💧) ekler. Geliştirildikçe üretim hızlanır.</div>
+        <div class="struct-progress-wrap" id="wellProgressWrap" style="display:none;">
+          <div class="struct-progress-fill fill-well" id="wellProgressFill" style="width: 0%;"></div>
+        </div>
+        <div class="struct-perk" id="wellPerkText">Kilitli: Önce Barınağı Seviye 2'ye yükselt</div>
+        <button type="button" class="struct-action-btn btn-struct-well" id="btnActionWell">🪣 Su Kuyusu İnşa Et (18🪵 14🪨)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GÜNLÜK GİRİŞ ÖDÜLÜ MODALI -->
+<div class="modal-backdrop" id="dailyRewardModal">
+  <div class="daily-modal-card">
+    <div class="modal-icon" style="margin-bottom: 0;">🎁</div>
+    <h3 class="camp-modal-title" style="justify-content: center; border: none; padding: 0;">Günlük Giriş Ödülü</h3>
+    <p class="modal-desc" style="margin: 0;">Adada yeni bir gün! İlerlemenle uyumlu günlük kaynak ödülün hazır.</p>
+    <div class="daily-reward-box" id="dailyRewardSummary">
+      <div>🪵 +10 Odun • 🪨 +8 Taş</div>
+      <div>📦 Tahtaya +1 Kaynak Kutusu</div>
+    </div>
+    <button type="button" class="btn-daily-claim" id="btnClaimDailyReward">✨ Ödülü Al</button>
+  </div>
+</div>
+
+<!-- OYUN BİTİŞ MODALI -->
+<div class="modal-backdrop" id="gameOverModal">
+  <div class="modal-card">
+    <div class="modal-icon">💀</div>
+    <h2 class="modal-title">Hayatta Kalamadın!</h2>
+    <p class="modal-desc" id="gameOverReason">Açlık ve susuzluk yüzünden adada gücünü tamamen kaybettin.</p>
+    <div class="modal-stats">
+      <span>⛺ Kamp: Sv.<span id="finalCampLvl">1</span></span>
+      <span>🪵 Odun: <span id="finalWood">0</span></span>
+      <span>🪨 Taş: <span id="finalStone">0</span></span>
+    </div>
+    <div class="modal-stats" id="deathPenaltyBox" style="color: #ff8fa3; border: 1px solid rgba(255, 107, 107, 0.35); flex-direction: column; gap: 4px;">
+      <div style="font-size: 11px; opacity: 0.9;">⚠️ Ölüm Cezası (%20 Kaynak Kaybı)</div>
+      <div id="deathPenaltyText">Kaybedilen: -0 🪵, -0 🪨</div>
+    </div>
+    <button class="btn-restart" id="btnRestart">✨ Yeniden Doğ</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const SAVE_KEY = 'lost_island_save_v1';
+
+  // SABİTLER
+  const BASE_MAX_ENERGY = 50;
+  const MAX_ENERGY = BASE_MAX_ENERGY;
+  const ENERGY_REGEN_MS = 10000; // 10 saniyede +1 enerji
+  const REST_COOLDOWN_MS = 45000; // 45 saniye dinlenme beklemesi
+  const REST_GAIN = 15;
+
+  const MAX_STAT = 100;
+  const HUNGER_DECAY_MS = 12000; // Her 12 saniyede 1 azalır
+  const THIRST_DECAY_MS = 9000;  // Her 9 saniyede 1 azalır
+  const HEALTH_DECAY_SINGLE_MS = 6000; // Açlık VEYA susuzluk 0 ise 6 sn'de 1 sağlık kaybı
+  const HEALTH_DECAY_BOTH_MS = 2500;   // İkisi de 0 ise 2.5 sn'de 1 sağlık kaybı
+
+  const CAMP_LEVELS = [
+    { level: 1, name: 'Basit Çadır', icon: '🏕️', wood: 15, stone: 10, survivalBonus: 0, unlockText: 'Sv.2: Su Kuyusu kilidi açılır' },
+    { level: 2, name: 'Ahşap Kulübe', icon: '🛖', wood: 35, stone: 25, survivalBonus: 0.08, unlockText: 'Su Kuyusu açık! Sv.3: Kuyu Sv.2 kilidi' },
+    { level: 3, name: 'Gözetleme Kulesi', icon: '🗼', wood: 70, stone: 55, survivalBonus: 0.15, unlockText: 'Keşifte Sv.2 eşya şansı + Kuyu Sv.2' },
+    { level: 4, name: 'Taş Hisar', icon: '🏰', wood: 130, stone: 100, survivalBonus: 0.22, unlockText: 'Kuyu Sv.3 kilidi açılır' },
+    { level: 5, name: 'Ada Kolonisi', icon: '🏝️', wood: 220, stone: 180, survivalBonus: 0.28, unlockText: 'Kuyu Sv.4 (Maks) kilidi açılır' },
+    { level: 6, name: 'Efsanevi Sığınak', icon: '👑', wood: 9999, stone: 9999, survivalBonus: 0.35, unlockText: 'Maksimum Barınak Koruması!' }
+  ];
+
+  // KAMP ATEŞİ SABİTLERİ
+  const CAMPFIRE_BUILD_WOOD = 12;
+  const CAMPFIRE_RELIGHT_WOOD = 6;
+  const CAMPFIRE_DURATION_MS = 180000; // 3 dakika (180 saniye) aktif kalır
+  const CAMPFIRE_SURVIVAL_SLOW = 0.30; // Açlık & susuzluk düşüşünü %30 yavaşlatır
+  const CAMPFIRE_HEAL_INTERVAL_MS = 20000; // Açlık & susuzluk > 30 iken 20 sn'de +1 sağlık yeniler
+
+  // SU KUYUSU SABİTLERİ (Barınak seviyesine göre kilit açılır)
+  const WELL_LEVELS = [
+    { level: 1, reqShelter: 2, wood: 18, stone: 14, intervalMs: 45000, waterLevel: 1 },
+    { level: 2, reqShelter: 3, wood: 36, stone: 28, intervalMs: 32000, waterLevel: 1 },
+    { level: 3, reqShelter: 4, wood: 65, stone: 50, intervalMs: 22000, waterLevel: 1 },
+    { level: 4, reqShelter: 5, wood: 110, stone: 85, intervalMs: 15000, waterLevel: 2 }
+  ];
+
+  // EŞYA TANIMLARI (4 zincir: wood, stone, food, water — Sv.1..5 korunarak Sv.6 kaynak kutuları eklendi)
+  const ITEMS = {
+    wood: [
+      { level: 1, name: 'Dal Parçası', emoji: '🌿', harvest: 0 },
+      { level: 2, name: 'Kütük', emoji: '🪵', harvest: 0 },
+      { level: 3, name: 'Kereste Yığını', emoji: '🪚', harvest: 5 },
+      { level: 4, name: 'Sağlam Kalas', emoji: '🪜', harvest: 14 },
+      { level: 5, name: 'Usta Marangoz Seti', emoji: '🏗️', harvest: 32 },
+      { level: 6, name: 'Kadim Kereste Sandığı', emoji: '📦', harvest: 68 }
+    ],
+    stone: [
+      { level: 1, name: 'Çakıl Taşı', emoji: '🪨', harvest: 0 },
+      { level: 2, name: 'Kaya Parçası', emoji: '⛰️', harvest: 0 },
+      { level: 3, name: 'Yontulmuş Taş', emoji: '🧱', harvest: 5 },
+      { level: 4, name: 'Taş Blok', emoji: '🗿', harvest: 14 },
+      { level: 5, name: 'Antik Anıt Taşı', emoji: '🏛️', harvest: 32 },
+      { level: 6, name: 'Mühürlü Taş Kasası', emoji: '🧰', harvest: 68 }
+    ],
+    food: [
+      { level: 1, name: 'Yabani Meyve', emoji: '🍒', restore: 8 },
+      { level: 2, name: 'Hindistan Cevizi', emoji: '🥥', restore: 18 },
+      { level: 3, name: 'Izgara Balık', emoji: '🐟', restore: 34 },
+      { level: 4, name: 'Tropik Ziyafet', emoji: '🍲', restore: 60 },
+      { level: 5, name: 'Kraliyet Sofrası', emoji: '🍖', restore: 100 },
+      { level: 6, name: 'Bereket Erzak Sandığı', emoji: '🧺', restore: 100 }
+    ],
+    water: [
+      { level: 1, name: 'Çiy Damlası', emoji: '💧', restore: 8 },
+      { level: 2, name: 'Yağmur Suyu', emoji: '🥤', restore: 18 },
+      { level: 3, name: 'Matara Suyu', emoji: '🫗', restore: 34 },
+      { level: 4, name: 'Arıtılmış Kaynak', emoji: '🍶', restore: 60 },
+      { level: 5, name: 'Saf Kristal Su', emoji: '🧊', restore: 100 },
+      { level: 6, name: 'Kaynak Su Matarası Kutusu', emoji: '🛢️', restore: 100 }
+    ]
+  };
+
+  // =========================================================================
+  // PROFESYONEL SES SİSTEMİ (WEB AUDIO API - HARİCİ BAĞIMLILIKSIZ, HATAYA DAYANIKLI)
+  // =========================================================================
+  const AUDIO_PREFS_KEY = 'lost_island_audio_prefs_v1';
+
+  const SoundEngine = (() => {
+    const defaultPrefs = {
+      enabled: true,
+      ambientEnabled: true,
+      sfxEnabled: true,
+      ambientVolume: 0.35,
+      sfxVolume: 0.75
+    };
+
+    let prefs = { ...defaultPrefs };
+    let ctx = null;
+    let masterGain = null;
+    let ambientBus = null;
+    let sfxBus = null;
+    let noiseBuffer = null;
+    let ambientNodes = [];
+    let birdTimer = null;
+    let birdNoteTimers = [];
+    let isResuming = false;
+    let isDisposed = false;
+    let lastPlayedAt = Object.create(null);
+    let activeSfxCount = 0;
+    let sfxTimers = new Set();
+    const MAX_CONCURRENT_SFX = 5;
+
+    function loadPrefs() {
+      try {
+        const raw = localStorage.getItem(AUDIO_PREFS_KEY);
+        if (!raw) {
+          prefs = { ...defaultPrefs };
+          return;
+        }
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') {
+          prefs = { ...defaultPrefs };
+          return;
+        }
+        prefs = {
+          enabled: typeof parsed.enabled === 'boolean' ? parsed.enabled : true,
+          ambientEnabled: typeof parsed.ambientEnabled === 'boolean' ? parsed.ambientEnabled : true,
+          sfxEnabled: typeof parsed.sfxEnabled === 'boolean' ? parsed.sfxEnabled : true,
+          ambientVolume: typeof parsed.ambientVolume === 'number' && Number.isFinite(parsed.ambientVolume)
+            ? Math.max(0, Math.min(1, parsed.ambientVolume)) : 0.35,
+          sfxVolume: typeof parsed.sfxVolume === 'number' && Number.isFinite(parsed.sfxVolume)
+            ? Math.max(0, Math.min(1, parsed.sfxVolume)) : 0.75
+        };
+      } catch (e) {
+        prefs = { ...defaultPrefs };
+      }
+    }
+
+    function savePrefs() {
+      try {
+        localStorage.setItem(AUDIO_PREFS_KEY, JSON.stringify(prefs));
+      } catch (e) {}
+    }
+
+    function clearBirdTimers() {
+      if (birdTimer !== null) {
+        clearTimeout(birdTimer);
+        birdTimer = null;
+      }
+      if (birdNoteTimers.length > 0) {
+        for (let i = 0; i < birdNoteTimers.length; i++) {
+          clearTimeout(birdNoteTimers[i]);
+        }
+        birdNoteTimers = [];
+      }
+    }
+
+    function stopAmbientLoops() {
+      clearBirdTimers();
+      for (let i = 0; i < ambientNodes.length; i++) {
+        const item = ambientNodes[i];
+        try {
+          if (item && typeof item.stop === 'function') {
+            item.stop();
+          }
+        } catch (e) {}
+        try {
+          if (item && typeof item.disconnect === 'function') {
+            item.disconnect();
+          }
+        } catch (e) {}
+      }
+      ambientNodes = [];
+    }
+
+    function clearAllSfxTimers() {
+      sfxTimers.forEach((id) => clearTimeout(id));
+      sfxTimers.clear();
+      activeSfxCount = 0;
+    }
+
+    function safeResumeContext() {
+      if (!ctx || isDisposed || ctx.state !== 'suspended' || isResuming) return;
+      isResuming = true;
+      try {
+        const p = ctx.resume();
+        if (p && typeof p.finally === 'function') {
+          p.finally(() => {
+            isResuming = false;
+            applyGains();
+          });
+        } else if (p && typeof p.then === 'function') {
+          p.then(() => {
+            isResuming = false;
+            applyGains();
+          }, () => {
+            isResuming = false;
+          });
+        } else {
+          isResuming = false;
+        }
+      } catch (e) {
+        isResuming = false;
+      }
+    }
+
+    function applyGains() {
+      if (!ctx || !masterGain || !ambientBus || !sfxBus) return;
+      try {
+        const t = ctx.currentTime;
+        const masterTarget = (prefs.enabled && !isDisposed) ? 1 : 0;
+        const ambientTarget = (prefs.enabled && prefs.ambientEnabled && !isDisposed)
+          ? Math.max(0, Math.min(0.28, prefs.ambientVolume * 0.24))
+          : 0;
+        const sfxTarget = (prefs.enabled && prefs.sfxEnabled && !isDisposed)
+          ? Math.max(0, Math.min(0.95, prefs.sfxVolume * 0.78))
+          : 0;
+
+        masterGain.gain.cancelScheduledValues(t);
+        ambientBus.gain.cancelScheduledValues(t);
+        sfxBus.gain.cancelScheduledValues(t);
+
+        masterGain.gain.setValueAtTime(masterGain.gain.value, t);
+        ambientBus.gain.setValueAtTime(ambientBus.gain.value, t);
+        sfxBus.gain.setValueAtTime(sfxBus.gain.value, t);
+
+        masterGain.gain.setTargetAtTime(masterTarget, t, 0.03);
+        ambientBus.gain.setTargetAtTime(ambientTarget, t, 0.06);
+        sfxBus.gain.setTargetAtTime(sfxTarget, t, 0.03);
+      } catch (e) {}
+    }
+
+    function ensureContext(allowCreate = true) {
+      if (isDisposed) return null;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return null;
+
+        if (!ctx && allowCreate) {
+          ctx = new AudioCtx();
+
+          masterGain = ctx.createGain();
+          ambientBus = ctx.createGain();
+          sfxBus = ctx.createGain();
+
+          masterGain.gain.value = prefs.enabled ? 1 : 0;
+          ambientBus.gain.value = (prefs.enabled && prefs.ambientEnabled)
+            ? Math.max(0, Math.min(0.28, prefs.ambientVolume * 0.24))
+            : 0;
+          sfxBus.gain.value = (prefs.enabled && prefs.sfxEnabled)
+            ? Math.max(0, Math.min(0.95, prefs.sfxVolume * 0.78))
+            : 0;
+
+          ambientBus.connect(masterGain);
+          sfxBus.connect(masterGain);
+          masterGain.connect(ctx.destination);
+
+          const sampleRate = ctx.sampleRate || 44100;
+          const length = sampleRate * 2;
+          noiseBuffer = ctx.createBuffer(1, length, sampleRate);
+          const data = noiseBuffer.getChannelData(0);
+          let b0 = 0, b1 = 0, b2 = 0;
+          for (let i = 0; i < length; i++) {
+            const white = Math.random() * 2 - 1;
+            b0 = 0.99765 * b0 + white * 0.0990460;
+            b1 = 0.96300 * b1 + white * 0.2965164;
+            b2 = 0.57000 * b2 + white * 1.0526913;
+            data[i] = ((b0 + b1 + b2 + white * 0.1848) * 0.18);
+          }
+
+          startAmbientLoops();
+        }
+
+        if (ctx && ctx.state === 'suspended' && !document.hidden) {
+          safeResumeContext();
+        }
+
+        applyGains();
+        return ctx;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function startAmbientLoops() {
+      if (!ctx || !ambientBus || !noiseBuffer || isDisposed) return;
+      if (ambientNodes.length > 0) return;
+
+      try {
+        const nodes = [];
+
+        const waveSrc = ctx.createBufferSource();
+        waveSrc.buffer = noiseBuffer;
+        waveSrc.loop = true;
+
+        const waveFilter = ctx.createBiquadFilter();
+        waveFilter.type = 'lowpass';
+        waveFilter.frequency.value = 340;
+        waveFilter.Q.value = 0.7;
+
+        const waveGain = ctx.createGain();
+        waveGain.gain.value = 0.36;
+
+        const waveLfo = ctx.createOscillator();
+        waveLfo.type = 'sine';
+        waveLfo.frequency.value = 0.13;
+
+        const waveLfoDepth = ctx.createGain();
+        waveLfoDepth.gain.value = 180;
+
+        waveLfo.connect(waveLfoDepth);
+        waveLfoDepth.connect(waveFilter.frequency);
+
+        const waveAmpLfo = ctx.createOscillator();
+        waveAmpLfo.type = 'sine';
+        waveAmpLfo.frequency.value = 0.13;
+
+        const waveAmpDepth = ctx.createGain();
+        waveAmpDepth.gain.value = 0.14;
+
+        waveAmpLfo.connect(waveAmpDepth);
+        waveAmpDepth.connect(waveGain.gain);
+
+        waveSrc.connect(waveFilter);
+        waveFilter.connect(waveGain);
+        waveGain.connect(ambientBus);
+
+        waveSrc.start();
+        waveLfo.start();
+        waveAmpLfo.start();
+        nodes.push(waveSrc, waveFilter, waveGain, waveLfo, waveLfoDepth, waveAmpLfo, waveAmpDepth);
+
+        const breezeSrc = ctx.createBufferSource();
+        breezeSrc.buffer = noiseBuffer;
+        breezeSrc.loop = true;
+
+        const breezeFilter = ctx.createBiquadFilter();
+        breezeFilter.type = 'bandpass';
+        breezeFilter.frequency.value = 920;
+        breezeFilter.Q.value = 1.6;
+
+        const breezeGain = ctx.createGain();
+        breezeGain.gain.value = 0.09;
+
+        breezeSrc.connect(breezeFilter);
+        breezeFilter.connect(breezeGain);
+        breezeGain.connect(ambientBus);
+        breezeSrc.start();
+        nodes.push(breezeSrc, breezeFilter, breezeGain);
+
+        ambientNodes = nodes;
+
+        scheduleNextBirdCall();
+      } catch (e) {
+        stopAmbientLoops();
+      }
+    }
+
+    function scheduleNextBirdCall() {
+      clearBirdTimers();
+      if (isDisposed || document.hidden || !ctx || ctx.state !== 'running' || !prefs.enabled || !prefs.ambientEnabled) {
+        return;
+      }
+      const waitMs = 4200 + Math.floor(Math.random() * 5800);
+      birdTimer = setTimeout(() => {
+        birdTimer = null;
+        if (isDisposed || document.hidden || !ctx || ctx.state !== 'running' || !prefs.enabled || !prefs.ambientEnabled) {
+          return;
+        }
+        playTropicalBirdCall();
+        scheduleNextBirdCall();
+      }, waitMs);
+    }
+
+    function playTropicalBirdCall() {
+      if (!ctx || !ambientBus || isDisposed || document.hidden || ctx.state !== 'running' || !prefs.enabled || !prefs.ambientEnabled) {
+        return;
+      }
+      try {
+        const now = ctx.currentTime;
+        const notes = Math.random() < 0.5 ? 2 : 3;
+        const baseFreq = 1650 + Math.random() * 650;
+
+        for (let i = 0; i < notes; i++) {
+          const start = now + i * 0.145;
+          const dur = 0.085 + Math.random() * 0.035;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'sine';
+          const fStart = baseFreq * (1 + i * 0.08);
+          const fEnd = fStart * (i === notes - 1 ? 0.84 : 1.16);
+
+          osc.frequency.setValueAtTime(fStart, start);
+          osc.frequency.exponentialRampToValueAtTime(Math.max(300, fEnd), start + dur);
+
+          gain.gain.setValueAtTime(0.0001, start);
+          gain.gain.linearRampToValueAtTime(0.085, start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+
+          osc.connect(gain);
+          gain.connect(ambientBus);
+
+          osc.start(start);
+          osc.stop(start + dur + 0.02);
+
+          const cleanupId = setTimeout(() => {
+            birdNoteTimers = birdNoteTimers.filter((id) => id !== cleanupId);
+            try { osc.disconnect(); } catch (e) {}
+            try { gain.disconnect(); } catch (e) {}
+          }, Math.ceil((i * 0.145 + dur + 0.05) * 1000));
+          birdNoteTimers.push(cleanupId);
+        }
+      } catch (e) {}
+    }
+
+    function canPlaySfx(key, minGapMs = 65) {
+      if (isDisposed || document.hidden) return false;
+      if (!prefs.enabled || !prefs.sfxEnabled) return false;
+      if (activeSfxCount >= MAX_CONCURRENT_SFX) return false;
+      const nowMs = Date.now();
+      const prev = lastPlayedAt[key] || 0;
+      if (nowMs - prev < minGapMs) return false;
+      lastPlayedAt[key] = nowMs;
+      return true;
+    }
+
+    function trackSfx(durationSec, cleanupFn) {
+      activeSfxCount++;
+      const ms = Math.max(60, Math.ceil(durationSec * 1000) + 30);
+      const timerId = setTimeout(() => {
+        sfxTimers.delete(timerId);
+        activeSfxCount = Math.max(0, activeSfxCount - 1);
+        if (typeof cleanupFn === 'function') {
+          try { cleanupFn(); } catch (e) {}
+        }
+      }, ms);
+      sfxTimers.add(timerId);
+    }
+
+    function unlock() {
+      if (isDisposed || document.hidden) return;
+      ensureContext(true);
+    }
+
+    function handleVisibility(isHidden) {
+      if (isDisposed) return;
+      if (isHidden) {
+        clearBirdTimers();
+        clearAllSfxTimers();
+        if (!ctx) return;
+        try {
+          if (masterGain && ctx.currentTime !== undefined) {
+            masterGain.gain.setTargetAtTime(0, ctx.currentTime, 0.015);
+          }
+          if (ctx.state === 'running') {
+            ctx.suspend().catch(() => {});
+          }
+        } catch (e) {}
+      } else {
+        if (!ctx) {
+          if (prefs.enabled) {
+            ensureContext(true);
+          }
+          return;
+        }
+        try {
+          if (prefs.enabled) {
+            if (ambientNodes.length === 0 && noiseBuffer) {
+              startAmbientLoops();
+            }
+            if (ctx.state === 'suspended') {
+              if (!isResuming) {
+                isResuming = true;
+                ctx.resume().then(() => {
+                  isResuming = false;
+                  applyGains();
+                  if (prefs.ambientEnabled) {
+                    scheduleNextBirdCall();
+                  }
+                }, () => {
+                  isResuming = false;
+                });
+              }
+            } else {
+              applyGains();
+              if (prefs.ambientEnabled) {
+                scheduleNextBirdCall();
+              }
+            }
+          } else {
+            applyGains();
+          }
+        } catch (e) {
+          isResuming = false;
+        }
+      }
+    }
+
+    function dispose() {
+      isDisposed = true;
+      clearBirdTimers();
+      clearAllSfxTimers();
+      stopAmbientLoops();
+      if (ctx) {
+        try {
+          if (typeof ctx.close === 'function' && ctx.state !== 'closed') {
+            ctx.close().catch(() => {});
+          }
+        } catch (e) {}
+        ctx = null;
+        masterGain = null;
+        ambientBus = null;
+        sfxBus = null;
+        noiseBuffer = null;
+      }
+    }
+
+    function playTone(opts) {
+      if (!prefs.enabled || !prefs.sfxEnabled || isDisposed || document.hidden) return;
+      const c = ensureContext(true);
+      if (!c || !sfxBus) return;
+      try {
+        const now = c.currentTime + (opts.delay || 0);
+        const dur = opts.duration || 0.14;
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+
+        osc.type = opts.type || 'triangle';
+        osc.frequency.setValueAtTime(opts.freqStart || 320, now);
+        if (opts.freqEnd) {
+          if (opts.linearRamp) {
+            osc.frequency.linearRampToValueAtTime(opts.freqEnd, now + dur);
+          } else {
+            osc.frequency.exponentialRampToValueAtTime(Math.max(40, opts.freqEnd), now + dur);
+          }
+        }
+
+        const peak = opts.peak || 0.22;
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(peak, now + Math.min(0.02, dur * 0.25));
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+        osc.connect(gain);
+        gain.connect(sfxBus);
+
+        osc.start(now);
+        osc.stop(now + dur + 0.02);
+        trackSfx(dur + (opts.delay || 0), () => {
+          try { osc.disconnect(); } catch (e) {}
+          try { gain.disconnect(); } catch (e) {}
+        });
+      } catch (e) {}
+    }
+
+    function playNoiseBurst(opts) {
+      if (!prefs.enabled || !prefs.sfxEnabled || isDisposed || document.hidden) return;
+      const c = ensureContext(true);
+      if (!c || !sfxBus || !noiseBuffer) return;
+      try {
+        const now = c.currentTime + (opts.delay || 0);
+        const dur = opts.duration || 0.12;
+        const src = c.createBufferSource();
+        src.buffer = noiseBuffer;
+
+        const filter = c.createBiquadFilter();
+        filter.type = opts.filterType || 'bandpass';
+        filter.frequency.setValueAtTime(opts.freq || 700, now);
+        if (opts.freqEnd) {
+          filter.frequency.exponentialRampToValueAtTime(Math.max(80, opts.freqEnd), now + dur);
+        }
+        filter.Q.value = opts.q || 1.2;
+
+        const gain = c.createGain();
+        const peak = opts.peak || 0.22;
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(peak, now + Math.min(0.015, dur * 0.2));
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(sfxBus);
+
+        src.start(now, Math.random() * 0.8, dur + 0.02);
+        trackSfx(dur + (opts.delay || 0), () => {
+          try { src.disconnect(); } catch (e) {}
+          try { filter.disconnect(); } catch (e) {}
+          try { gain.disconnect(); } catch (e) {}
+        });
+      } catch (e) {}
+    }
+
+    return {
+      init() {
+        isDisposed = false;
+        loadPrefs();
+      },
+      unlock,
+      handleVisibility,
+      dispose,
+      getPrefs() {
+        return { ...prefs };
+      },
+      setMasterEnabled(val) {
+        prefs.enabled = Boolean(val);
+        savePrefs();
+        if (isDisposed) return;
+        if (prefs.enabled) {
+          ensureContext(true);
+          if (ambientNodes.length === 0 && ctx && noiseBuffer) {
+            startAmbientLoops();
+          }
+          if (ctx && ctx.state === 'suspended' && !document.hidden) {
+            safeResumeContext();
+          }
+          if (prefs.ambientEnabled && !document.hidden) {
+            scheduleNextBirdCall();
+          }
+        } else {
+          clearBirdTimers();
+        }
+        applyGains();
+      },
+      setAmbientEnabled(val) {
+        prefs.ambientEnabled = Boolean(val);
+        savePrefs();
+        if (isDisposed) return;
+        if (prefs.ambientEnabled && prefs.enabled) {
+          ensureContext(true);
+          if (ambientNodes.length === 0 && ctx && noiseBuffer) {
+            startAmbientLoops();
+          }
+          if (!document.hidden) {
+            scheduleNextBirdCall();
+          }
+        } else {
+          clearBirdTimers();
+        }
+        applyGains();
+      },
+      setSfxEnabled(val) {
+        prefs.sfxEnabled = Boolean(val);
+        savePrefs();
+        if (!prefs.sfxEnabled) {
+          clearAllSfxTimers();
+        }
+        applyGains();
+      },
+      setAmbientVolume(val) {
+        prefs.ambientVolume = Math.max(0, Math.min(1, Number(val) || 0));
+        savePrefs();
+        applyGains();
+      },
+      setSfxVolume(val) {
+        prefs.sfxVolume = Math.max(0, Math.min(1, Number(val) || 0));
+        savePrefs();
+        applyGains();
+      },
+      playDragStart() {
+        if (!canPlaySfx('drag', 110)) return;
+        playNoiseBurst({ filterType: 'bandpass', freq: 520, freqEnd: 820, q: 1.5, duration: 0.065, peak: 0.14 });
+        playTone({ type: 'sine', freqStart: 250, freqEnd: 340, duration: 0.06, peak: 0.09 });
+      },
+      playDropPlace() {
+        if (!canPlaySfx('place', 80)) return;
+        playTone({ type: 'triangle', freqStart: 210, freqEnd: 115, duration: 0.085, peak: 0.2 });
+        playNoiseBurst({ filterType: 'lowpass', freq: 650, q: 1.0, duration: 0.05, peak: 0.12 });
+      },
+      playMerge(level = 2) {
+        if (!canPlaySfx('merge', 90)) return;
+        const pitchBoost = 1 + Math.min(4, Math.max(1, level) - 1) * 0.08;
+        playTone({ type: 'triangle', freqStart: 330 * pitchBoost, freqEnd: 440 * pitchBoost, duration: 0.12, peak: 0.24 });
+        playTone({ type: 'sine', freqStart: 523.25 * pitchBoost, freqEnd: 783.99 * pitchBoost, duration: 0.22, delay: 0.065, peak: 0.22 });
+        playNoiseBurst({ filterType: 'highpass', freq: 1800, q: 1.1, duration: 0.09, delay: 0.05, peak: 0.09 });
+      },
+      playExplore() {
+        if (!canPlaySfx('explore', 120)) return;
+        playTone({ type: 'triangle', freqStart: 280, freqEnd: 420, duration: 0.11, peak: 0.18 });
+        playTone({ type: 'sine', freqStart: 420, freqEnd: 587.33, duration: 0.15, delay: 0.075, peak: 0.18 });
+      },
+      playHarvestWood() {
+        if (!canPlaySfx('wood', 90)) return;
+        playTone({ type: 'triangle', freqStart: 195, freqEnd: 110, duration: 0.09, peak: 0.25 });
+        playNoiseBurst({ filterType: 'bandpass', freq: 480, freqEnd: 260, q: 2.2, duration: 0.08, peak: 0.2 });
+      },
+      playHarvestStone() {
+        if (!canPlaySfx('stone', 90)) return;
+        playTone({ type: 'square', freqStart: 540, freqEnd: 240, duration: 0.065, peak: 0.14 });
+        playNoiseBurst({ filterType: 'highpass', freq: 1400, freqEnd: 600, q: 1.8, duration: 0.075, peak: 0.22 });
+      },
+      playEat() {
+        if (!canPlaySfx('eat', 120)) return;
+        for (let i = 0; i < 3; i++) {
+          playNoiseBurst({
+            filterType: 'bandpass',
+            freq: 850 + i * 140,
+            q: 2.0,
+            duration: 0.06,
+            delay: i * 0.085,
+            peak: 0.18
+          });
+          playTone({
+            type: 'sine',
+            freqStart: 230 + i * 35,
+            freqEnd: 180,
+            duration: 0.055,
+            delay: i * 0.085,
+            peak: 0.11
+          });
+        }
+      },
+      playDrink() {
+        if (!canPlaySfx('drink', 120)) return;
+        playTone({ type: 'sine', freqStart: 340, freqEnd: 620, duration: 0.1, delay: 0, peak: 0.18 });
+        playTone({ type: 'sine', freqStart: 420, freqEnd: 760, duration: 0.11, delay: 0.09, peak: 0.18 });
+        playTone({ type: 'sine', freqStart: 480, freqEnd: 880, duration: 0.12, delay: 0.18, peak: 0.16 });
+      },
+      playRest() {
+        if (!canPlaySfx('rest', 140)) return;
+        for (let i = 0; i < 4; i++) {
+          playNoiseBurst({
+            filterType: 'bandpass',
+            freq: 1400 + (i % 2) * 700,
+            q: 2.4,
+            duration: 0.055,
+            delay: i * 0.07,
+            peak: 0.17
+          });
+        }
+        playTone({ type: 'sine', freqStart: 220, freqEnd: 293.66, duration: 0.28, delay: 0.04, peak: 0.14 });
+      },
+      playCampUpgrade() {
+        if (!canPlaySfx('upgrade', 180)) return;
+        const chord = [392.0, 493.88, 587.33, 783.99];
+        chord.forEach((freq, idx) => {
+          playTone({
+            type: 'triangle',
+            freqStart: freq * 0.96,
+            freqEnd: freq,
+            duration: 0.28,
+            delay: idx * 0.085,
+            peak: 0.2
+          });
+        });
+      },
+      playGameOver() {
+        if (!canPlaySfx('gameover', 250)) return;
+        playTone({ type: 'sawtooth', freqStart: 311.13, freqEnd: 277.18, duration: 0.24, delay: 0, peak: 0.14 });
+        playTone({ type: 'sawtooth', freqStart: 261.63, freqEnd: 220.0, duration: 0.26, delay: 0.22, peak: 0.14 });
+        playTone({ type: 'triangle', freqStart: 196.0, freqEnd: 130.81, duration: 0.45, delay: 0.46, peak: 0.2 });
+      }
+    };
+  })();
+
+  function syncAudioUI() {
+    const prefs = SoundEngine.getPrefs();
+    const toggleBtn = document.getElementById('audioToggleBtn');
+    const masterBtn = document.getElementById('audioMasterBtn');
+    const ambBtn = document.getElementById('ambientToggleBtn');
+    const sfxBtn = document.getElementById('sfxToggleBtn');
+    const ambSlider = document.getElementById('ambientVolumeSlider');
+    const sfxSlider = document.getElementById('sfxVolumeSlider');
+
+    if (toggleBtn) {
+      toggleBtn.textContent = prefs.enabled ? '🔊' : '🔇';
+      toggleBtn.classList.toggle('muted', !prefs.enabled);
+    }
+    if (masterBtn) {
+      masterBtn.textContent = prefs.enabled ? 'Açık' : 'Kapalı';
+      masterBtn.classList.toggle('off', !prefs.enabled);
+    }
+    if (ambBtn) {
+      ambBtn.textContent = prefs.ambientEnabled ? 'Açık' : 'Kapalı';
+      ambBtn.classList.toggle('off', !prefs.ambientEnabled);
+    }
+    if (sfxBtn) {
+      sfxBtn.textContent = prefs.sfxEnabled ? 'Açık' : 'Kapalı';
+      sfxBtn.classList.toggle('off', !prefs.sfxEnabled);
+    }
+    if (ambSlider) {
+      ambSlider.value = String(Math.round(prefs.ambientVolume * 100));
+    }
+    if (sfxSlider) {
+      sfxSlider.value = String(Math.round(prefs.sfxVolume * 100));
+    }
+  }
+
+  function setupAudioControls() {
+    SoundEngine.init();
+    syncAudioUI();
+
+    const unlockOnce = () => {
+      SoundEngine.unlock();
+    };
+    document.addEventListener('pointerdown', unlockOnce, { passive: true });
+    document.addEventListener('keydown', unlockOnce, { passive: true });
+
+    const toggleBtn = document.getElementById('audioToggleBtn');
+    const popover = document.getElementById('audioPopover');
+    const masterBtn = document.getElementById('audioMasterBtn');
+    const ambBtn = document.getElementById('ambientToggleBtn');
+    const sfxBtn = document.getElementById('sfxToggleBtn');
+    const ambSlider = document.getElementById('ambientVolumeSlider');
+    const sfxSlider = document.getElementById('sfxVolumeSlider');
+
+    if (toggleBtn && popover) {
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        SoundEngine.unlock();
+        popover.classList.toggle('open');
+      });
+
+      document.addEventListener('pointerdown', (e) => {
+        if (popover.classList.contains('open') && !popover.contains(e.target) && e.target !== toggleBtn) {
+          popover.classList.remove('open');
+        }
+      });
+    }
+
+    if (masterBtn) {
+      masterBtn.addEventListener('click', () => {
+        const current = SoundEngine.getPrefs().enabled;
+        SoundEngine.setMasterEnabled(!current);
+        syncAudioUI();
+      });
+    }
+
+    if (ambBtn) {
+      ambBtn.addEventListener('click', () => {
+        const current = SoundEngine.getPrefs().ambientEnabled;
+        SoundEngine.setAmbientEnabled(!current);
+        syncAudioUI();
+      });
+    }
+
+    if (sfxBtn) {
+      sfxBtn.addEventListener('click', () => {
+        const current = SoundEngine.getPrefs().sfxEnabled;
+        SoundEngine.setSfxEnabled(!current);
+        syncAudioUI();
+        if (!current) SoundEngine.playExplore();
+      });
+    }
+
+    if (ambSlider) {
+      ambSlider.addEventListener('input', (e) => {
+        SoundEngine.unlock();
+        SoundEngine.setAmbientVolume(Number(e.target.value) / 100);
+      });
+    }
+
+    if (sfxSlider) {
+      sfxSlider.addEventListener('input', (e) => {
+        SoundEngine.unlock();
+        SoundEngine.setSfxVolume(Number(e.target.value) / 100);
+      });
+      sfxSlider.addEventListener('change', () => {
+        SoundEngine.playDropPlace();
+      });
+    }
+  }
+
+  // OYUN DURUMU
+  let state = createDefaultState();
+  let isInitialized = false;
+  let lastPointerActionAt = 0;
+  let toastTimeout = null;
+  let pendingDailyReward = null;
+
+  // BOYUTLANDIRMA TAKİP DURUMU
+  let fitRafId = null;
+  let lastAppliedLayoutKey = '';
+  let lastObservedWrapperSize = { width: -1, height: -1 };
+  let boardResizeObserver = null;
+
+  // POINTER SÜRÜKLEME DURUMU
+  let pointerSession = {
+    active: false,
+    pointerId: null,
+    startIndex: -1,
+    startX: 0,
+    startY: 0,
+    isDragging: false,
+    ghostEl: null
+  };
+
+  function createDefaultState() {
+    const now = Date.now();
+    const initialBoard = Array(16).fill(null);
+    initialBoard[0] = { type: 'wood', level: 1 };
+    initialBoard[1] = { type: 'wood', level: 1 };
+    initialBoard[4] = { type: 'stone', level: 1 };
+    initialBoard[5] = { type: 'food', level: 1 };
+    initialBoard[6] = { type: 'water', level: 1 };
+
+    return {
+      playerLevel: 1,
+      maxEnergy: BASE_MAX_ENERGY,
+      energy: BASE_MAX_ENERGY,
+      lastEnergyTime: null,
+      wood: 5,
+      stone: 5,
+      campLevel: 1,
+      lastRestTime: 0,
+      health: MAX_STAT,
+      hunger: MAX_STAT,
+      thirst: MAX_STAT,
+      lastHungerTime: now,
+      lastThirstTime: now,
+      hungerZeroTime: null,
+      thirstZeroTime: null,
+      healthDecayProgress: 0,
+      lastHealthCheckTime: null,
+      isGameOver: false,
+      deathPenaltyApplied: false,
+      lastDeathPenalty: { wood: 0, stone: 0, boardItemsLost: 0 },
+      campfireBuilt: false,
+      campfireActiveUntil: 0,
+      campfireHealProgress: 0,
+      lastCampfireCheckTime: null,
+      wellLevel: 0,
+      lastWellTickTime: null,
+      wellProgressMs: 0,
+      lastDailyRewardDate: null,
+      board: initialBoard
+    };
+  }
+
+  function sanitizeBoard(rawBoard) {
+    const clean = Array(16).fill(null);
+    if (!Array.isArray(rawBoard)) return clean;
+    for (let i = 0; i < 16; i++) {
+      const cell = rawBoard[i];
+      if (
+        cell &&
+        typeof cell === 'object' &&
+        ITEMS[cell.type] &&
+        Number.isInteger(cell.level) &&
+        cell.level >= 1 &&
+        cell.level <= ITEMS[cell.type].length
+      ) {
+        clean[i] = { type: cell.type, level: cell.level };
+      }
+    }
+    return clean;
+  }
+
+  function toValidNumber(val, fallback) {
+    return typeof val === 'number' && Number.isFinite(val) ? val : fallback;
+  }
+
+  function toValidTimestamp(val, fallback, maxNow) {
+    if (typeof val !== 'number' || !Number.isFinite(val) || val <= 0) {
+      return fallback;
+    }
+    return val > maxNow ? maxNow : val;
+  }
+
+  function loadGame() {
+    const now = Date.now();
+    try {
+      let raw = null;
+      try {
+        raw = localStorage.getItem(SAVE_KEY);
+      } catch (storageErr) {
+        state = createDefaultState();
+        return;
+      }
+
+      if (!raw) {
+        state = createDefaultState();
+        return;
+      }
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        state = createDefaultState();
+        return;
+      }
+
+      const rawLevel = typeof parsed.playerLevel === 'number'
+        ? parsed.playerLevel
+        : (typeof parsed.level === 'number' ? parsed.level : 1);
+      const loadedPlayerLevel = Math.max(1, Math.floor(toValidNumber(rawLevel, 1)));
+      const loadedMaxEnergy = getMaxEnergyForLevel(loadedPlayerLevel);
+      const loadedEnergy = Math.max(0, Math.min(loadedMaxEnergy, Math.floor(toValidNumber(parsed.energy, loadedMaxEnergy))));
+
+      let loadedLastEnergyTime = null;
+      if (loadedEnergy < loadedMaxEnergy) {
+        loadedLastEnergyTime = toValidTimestamp(parsed.lastEnergyTime, now, now);
+      }
+
+      const loadedHealth = Math.max(0, Math.min(MAX_STAT, Math.floor(toValidNumber(parsed.health, MAX_STAT))));
+      const loadedHunger = Math.max(0, Math.min(MAX_STAT, Math.floor(toValidNumber(parsed.hunger, MAX_STAT))));
+      const loadedThirst = Math.max(0, Math.min(MAX_STAT, Math.floor(toValidNumber(parsed.thirst, MAX_STAT))));
+
+      const loadedLastHungerTime = now;
+      const loadedLastThirstTime = now;
+
+      const loadedHungerZeroTime = loadedHunger === 0 ? now : null;
+      const loadedThirstZeroTime = loadedThirst === 0 ? now : null;
+
+      let loadedHealthProgress = 0;
+      if (
+        (loadedHunger === 0 || loadedThirst === 0) &&
+        typeof parsed.healthDecayProgress === 'number' &&
+        Number.isFinite(parsed.healthDecayProgress)
+      ) {
+        loadedHealthProgress = Math.max(0, Math.min(0.999999, parsed.healthDecayProgress));
+      }
+
+      const loadedLastHealthCheckTime = (loadedHunger === 0 || loadedThirst === 0) ? now : null;
+
+      const loadedWood = Math.max(0, Math.floor(toValidNumber(parsed.wood, 0)));
+      const loadedStone = Math.max(0, Math.floor(toValidNumber(parsed.stone, 0)));
+      const loadedCampLevel = Math.max(1, Math.min(CAMP_LEVELS.length, Math.floor(toValidNumber(parsed.campLevel, 1))));
+      const loadedLastRestTime = Math.max(0, Math.min(now, toValidNumber(parsed.lastRestTime, 0)));
+
+      state = {
+        playerLevel: loadedPlayerLevel,
+        maxEnergy: loadedMaxEnergy,
+        energy: loadedEnergy,
+        lastEnergyTime: loadedLastEnergyTime,
+        wood: loadedWood,
+        stone: loadedStone,
+        campLevel: loadedCampLevel,
+        lastRestTime: loadedLastRestTime,
+        health: loadedHealth,
+        hunger: loadedHunger,
+        thirst: loadedThirst,
+        lastHungerTime: loadedLastHungerTime,
+        lastThirstTime: loadedLastThirstTime,
+        hungerZeroTime: loadedHungerZeroTime,
+        thirstZeroTime: loadedThirstZeroTime,
+        healthDecayProgress: loadedHealthProgress,
+        lastHealthCheckTime: loadedLastHealthCheckTime,
+        isGameOver: Boolean(parsed.isGameOver) || loadedHealth <= 0,
+        deathPenaltyApplied: Boolean(parsed.deathPenaltyApplied),
+        lastDeathPenalty: (parsed.lastDeathPenalty && typeof parsed.lastDeathPenalty === 'object')
+          ? {
+              wood: Math.max(0, Math.floor(toValidNumber(parsed.lastDeathPenalty.wood, 0))),
+              stone: Math.max(0, Math.floor(toValidNumber(parsed.lastDeathPenalty.stone, 0))),
+              boardItemsLost: Math.max(0, Math.floor(toValidNumber(parsed.lastDeathPenalty.boardItemsLost, 0)))
+            }
+          : { wood: 0, stone: 0, boardItemsLost: 0 },
+        campfireBuilt: Boolean(parsed.campfireBuilt),
+        campfireActiveUntil: Math.max(0, toValidNumber(parsed.campfireActiveUntil, 0)),
+        campfireHealProgress: Math.max(0, Math.min(0.999999, toValidNumber(parsed.campfireHealProgress, 0))),
+        lastCampfireCheckTime: null,
+        wellLevel: Math.max(0, Math.min(WELL_LEVELS.length, Math.floor(toValidNumber(parsed.wellLevel, 0)))),
+        lastWellTickTime: Math.max(0, Math.min(now, toValidNumber(parsed.wellLevel, 0) > 0 ? toValidNumber(parsed.lastWellTickTime, now) : 0)) || null,
+        wellProgressMs: Math.max(0, toValidNumber(parsed.wellProgressMs, 0)),
+        lastDailyRewardDate: typeof parsed.lastDailyRewardDate === 'string' && parsed.lastDailyRewardDate.trim()
+          ? parsed.lastDailyRewardDate.trim()
+          : null,
+        board: sanitizeBoard(parsed.board)
+      };
+
+      if (state.campfireBuilt && state.campfireActiveUntil > now) {
+        state.lastCampfireCheckTime = now;
+      }
+      if (state.wellLevel > 0 && !state.lastWellTickTime) {
+        state.lastWellTickTime = now;
+      }
+
+      if (state.isGameOver && !state.deathPenaltyApplied) {
+        applyDeathPenalty();
+      }
+
+      syncAllTimers(now);
+      saveGame();
+    } catch (e) {
+      state = createDefaultState();
+      saveGame();
+    }
+  }
+
+  function saveGame() {
+    try {
+      state.playerLevel = getPlayerLevel();
+      state.maxEnergy = getMaxEnergyForLevel(state.playerLevel);
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    } catch (e) {}
+  }
+
+  function clearGameStorage() {
+    const ownKeys = [SAVE_KEY, AUDIO_PREFS_KEY];
+    for (let i = 0; i < ownKeys.length; i++) {
+      try {
+        localStorage.removeItem(ownKeys[i]);
+      } catch (e) {}
+    }
+  }
+
+  function openResetConfirmModal() {
+    const popover = document.getElementById('audioPopover');
+    if (popover) popover.classList.remove('open');
+    const modal = document.getElementById('resetConfirmModal');
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeResetConfirmModal() {
+    const modal = document.getElementById('resetConfirmModal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function resetEntireGame() {
+    resetPointerDragState();
+    closeResetConfirmModal();
+    closeCampModal();
+    const dailyModal = document.getElementById('dailyRewardModal');
+    if (dailyModal) dailyModal.classList.remove('active');
+    const gameOverModal = document.getElementById('gameOverModal');
+    if (gameOverModal) gameOverModal.classList.remove('active');
+
+    pendingDailyReward = null;
+    clearGameStorage();
+    state = createDefaultState();
+    saveGame();
+    scheduleFitBoardToViewport(true);
+    fitBoardToViewport();
+    renderBoard();
+    updateUI();
+    checkAndPrepareDailyReward();
+    showToast('🔄 Oyun sıfırlandı ve yeniden başladı!');
+  }
+
+  function getPlayerLevel() {
+    const lvl = typeof state.playerLevel === 'number' && Number.isFinite(state.playerLevel)
+      ? Math.max(1, Math.floor(state.playerLevel))
+      : 1;
+    return lvl;
+  }
+
+  function getMaxEnergyForLevel(level = getPlayerLevel()) {
+    const safeLvl = Math.max(1, Math.floor(Number(level) || 1));
+    return BASE_MAX_ENERGY + (safeLvl - 1);
+  }
+
+  function getPlayerLevelReq(level = getPlayerLevel()) {
+    const safeLvl = Math.max(1, Math.floor(Number(level) || 1));
+    return {
+      wood: 8 + (safeLvl - 1) * 6,
+      stone: 6 + (safeLvl - 1) * 5
+    };
+  }
+
+  function advancePlayerLevel(step = 1) {
+    if (step !== 1) return;
+    const prevMax = getMaxEnergyForLevel(getPlayerLevel());
+    state.playerLevel = getPlayerLevel() + 1;
+    const nextMax = getMaxEnergyForLevel(state.playerLevel);
+    state.maxEnergy = nextMax;
+    state.energy = Math.min(state.energy, nextMax);
+    if (state.energy < nextMax && state.lastEnergyTime === null && prevMax >= nextMax) {
+      state.lastEnergyTime = Date.now();
+    }
+  }
+
+  function levelUpPlayerAction() {
+    const now = Date.now();
+    if (!ensureAlive(now)) return;
+
+    const currentLvl = getPlayerLevel();
+    const req = getPlayerLevelReq(currentLvl);
+    if (state.wood < req.wood || state.stone < req.stone) {
+      showToast('Seviye atlamak için yeterli malzeme yok!');
+      return;
+    }
+
+    state.wood -= req.wood;
+    state.stone -= req.stone;
+    advancePlayerLevel(1);
+    const nextLvl = getPlayerLevel();
+    const nextMaxEnergy = getMaxEnergyForLevel(nextLvl);
+
+    SoundEngine.playCampUpgrade();
+    saveGame();
+    updateUI();
+
+    const btnEl = document.getElementById('btnPlayerLevelUp');
+    if (btnEl) {
+      const rect = btnEl.getBoundingClientRect();
+      spawnFloatingText(rect.left + 10, rect.top - 16, `⭐ Sv.${nextLvl} • +1 Maks ⚡`, '#80ffdb');
+    }
+    showToast(`⭐ Seviye Atladın! Oyuncu Sv.${nextLvl} • Maks Enerji: ${nextMaxEnergy}`);
+  }
+
+  // ZAMANLAYICILAR
+  function syncAllTimers(now = Date.now()) {
+    let changed = false;
+    const maxEnergy = getMaxEnergyForLevel();
+    state.maxEnergy = maxEnergy;
+
+    if (state.energy > maxEnergy) {
+      state.energy = maxEnergy;
+      changed = true;
+    }
+
+    if (state.energy >= maxEnergy) {
+      if (state.lastEnergyTime !== null) {
+        state.lastEnergyTime = null;
+        changed = true;
+      }
+    } else {
+      if (typeof state.lastEnergyTime !== 'number' || !Number.isFinite(state.lastEnergyTime) || state.lastEnergyTime <= 0) {
+        state.lastEnergyTime = now;
+        changed = true;
+      } else {
+        const elapsedEnergy = now - state.lastEnergyTime;
+        if (elapsedEnergy >= ENERGY_REGEN_MS) {
+          const gained = Math.floor(elapsedEnergy / ENERGY_REGEN_MS);
+          state.energy = Math.min(maxEnergy, state.energy + gained);
+          if (state.energy >= maxEnergy) {
+            state.lastEnergyTime = null;
+          } else {
+            state.lastEnergyTime += gained * ENERGY_REGEN_MS;
+          }
+          changed = true;
+        }
+      }
+    }
+
+    if (state.isGameOver || state.health <= 0) {
+      state.health = 0;
+      state.isGameOver = true;
+      state.healthDecayProgress = 0;
+      state.lastHealthCheckTime = null;
+      if (!state.deathPenaltyApplied) {
+        applyDeathPenalty();
+        changed = true;
+      }
+      return changed;
+    }
+
+    const preHungerZero = state.hunger <= 0;
+    const preThirstZero = state.thirst <= 0;
+    let evalStart = typeof state.lastHealthCheckTime === 'number' && Number.isFinite(state.lastHealthCheckTime) && state.lastHealthCheckTime > 0
+      ? Math.min(now, state.lastHealthCheckTime)
+      : null;
+
+    const isFireBurning = Boolean(state.campfireBuilt && state.campfireActiveUntil > now);
+    const shelterInfo = CAMP_LEVELS[state.campLevel - 1] || CAMP_LEVELS[0];
+    const totalSlowRatio = Math.min(0.65, (shelterInfo.survivalBonus || 0) + (isFireBurning ? CAMPFIRE_SURVIVAL_SLOW : 0));
+    const effectiveHungerInterval = Math.round(HUNGER_DECAY_MS / (1 - totalSlowRatio));
+    const effectiveThirstInterval = Math.round(THIRST_DECAY_MS / (1 - totalSlowRatio));
+
+    if (typeof state.lastHungerTime !== 'number' || !Number.isFinite(state.lastHungerTime) || state.lastHungerTime <= 0) {
+      state.lastHungerTime = now;
+      changed = true;
+    }
+
+    let newlyReachedHungerZeroAt = null;
+    const elapsedHunger = now - state.lastHungerTime;
+    if (elapsedHunger >= effectiveHungerInterval) {
+      const hungerTicks = Math.floor(elapsedHunger / effectiveHungerInterval);
+      if (state.hunger > 0) {
+        if (hungerTicks >= state.hunger) {
+          const reachedZeroAt = state.lastHungerTime + state.hunger * effectiveHungerInterval;
+          state.hunger = 0;
+          newlyReachedHungerZeroAt = reachedZeroAt;
+          if (state.hungerZeroTime === null || reachedZeroAt < state.hungerZeroTime) {
+            state.hungerZeroTime = reachedZeroAt;
+          }
+        } else {
+          state.hunger -= hungerTicks;
+        }
+      } else if (state.hungerZeroTime === null) {
+        state.hungerZeroTime = state.lastHungerTime;
+      }
+      state.lastHungerTime += hungerTicks * effectiveHungerInterval;
+      changed = true;
+    } else if (state.hunger === 0 && state.hungerZeroTime === null) {
+      state.hungerZeroTime = state.lastHungerTime;
+      changed = true;
+    }
+
+    if (typeof state.lastThirstTime !== 'number' || !Number.isFinite(state.lastThirstTime) || state.lastThirstTime <= 0) {
+      state.lastThirstTime = now;
+      changed = true;
+    }
+
+    let newlyReachedThirstZeroAt = null;
+    const elapsedThirst = now - state.lastThirstTime;
+    if (elapsedThirst >= effectiveThirstInterval) {
+      const thirstTicks = Math.floor(elapsedThirst / effectiveThirstInterval);
+      if (state.thirst > 0) {
+        if (thirstTicks >= state.thirst) {
+          const reachedZeroAt = state.lastThirstTime + state.thirst * effectiveThirstInterval;
+          state.thirst = 0;
+          newlyReachedThirstZeroAt = reachedZeroAt;
+          if (state.thirstZeroTime === null || reachedZeroAt < state.thirstZeroTime) {
+            state.thirstZeroTime = reachedZeroAt;
+          }
+        } else {
+          state.thirst -= thirstTicks;
+        }
+      } else if (state.thirstZeroTime === null) {
+        state.thirstZeroTime = state.lastThirstTime;
+      }
+      state.lastThirstTime += thirstTicks * effectiveThirstInterval;
+      changed = true;
+    } else if (state.thirst === 0 && state.thirstZeroTime === null) {
+      state.thirstZeroTime = state.lastThirstTime;
+      changed = true;
+    }
+
+    if (isFireBurning) {
+      const fireCheckStart = (typeof state.lastCampfireCheckTime === 'number' && state.lastCampfireCheckTime > 0)
+        ? Math.min(now, state.lastCampfireCheckTime)
+        : now;
+      const fireEndSlice = Math.min(now, state.campfireActiveUntil);
+      const fireDt = Math.max(0, fireEndSlice - fireCheckStart);
+      if (fireDt > 0 && state.hunger > 30 && state.thirst > 30 && state.health < MAX_STAT) {
+        let healProg = (state.campfireHealProgress || 0) + (fireDt / CAMPFIRE_HEAL_INTERVAL_MS);
+        const healedHp = Math.floor(healProg);
+        state.campfireHealProgress = healProg - healedHp;
+        if (healedHp > 0) {
+          state.health = Math.min(MAX_STAT, state.health + healedHp);
+          changed = true;
+        }
+      }
+      state.lastCampfireCheckTime = now;
+    } else if (state.lastCampfireCheckTime !== null || state.campfireHealProgress !== 0) {
+      state.lastCampfireCheckTime = null;
+      state.campfireHealProgress = 0;
+    }
+
+    if (state.wellLevel > 0) {
+      const wellCfg = WELL_LEVELS[state.wellLevel - 1] || WELL_LEVELS[0];
+      const wellStart = (typeof state.lastWellTickTime === 'number' && state.lastWellTickTime > 0)
+        ? Math.min(now, state.lastWellTickTime)
+        : now;
+      const wellDt = Math.max(0, now - wellStart);
+      state.lastWellTickTime = now;
+
+      if (wellDt > 0) {
+        let totalWellMs = (state.wellProgressMs || 0) + wellDt;
+        const producedCount = Math.floor(totalWellMs / wellCfg.intervalMs);
+        totalWellMs = totalWellMs % wellCfg.intervalMs;
+
+        if (producedCount > 0) {
+          let addedAny = false;
+          for (let p = 0; p < producedCount; p++) {
+            const emptyCells = [];
+            for (let idx = 0; idx < 16; idx++) {
+              if (!state.board[idx]) emptyCells.push(idx);
+            }
+            if (emptyCells.length === 0) {
+              totalWellMs = wellCfg.intervalMs - 1000;
+              break;
+            }
+            const targetCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            state.board[targetCell] = { type: 'water', level: wellCfg.waterLevel };
+            addedAny = true;
+          }
+          if (addedAny) {
+            state._wellProducedBoardUpdate = true;
+            changed = true;
+          }
+        }
+        state.wellProgressMs = totalWellMs;
+      }
+    }
+
+    const postHungerZero = state.hunger <= 0;
+    const postThirstZero = state.thirst <= 0;
+
+    if (!postHungerZero && !postThirstZero) {
+      if (state.hungerZeroTime !== null || state.thirstZeroTime !== null) {
+        state.hungerZeroTime = null;
+        state.thirstZeroTime = null;
+        changed = true;
+      }
+      if (state.healthDecayProgress !== 0 || state.lastHealthCheckTime !== null) {
+        state.healthDecayProgress = 0;
+        state.lastHealthCheckTime = null;
+        changed = true;
+      }
+      return changed;
+    }
+
+    const hZeroAt = postHungerZero
+      ? (typeof state.hungerZeroTime === 'number' && Number.isFinite(state.hungerZeroTime) && state.hungerZeroTime > 0 ? state.hungerZeroTime : now)
+      : Infinity;
+    const tZeroAt = postThirstZero
+      ? (typeof state.thirstZeroTime === 'number' && Number.isFinite(state.thirstZeroTime) && state.thirstZeroTime > 0 ? state.thirstZeroTime : now)
+      : Infinity;
+
+    const firstZeroAt = Math.min(hZeroAt, tZeroAt);
+    const secondZeroAt = Math.max(hZeroAt, tZeroAt);
+
+    const becameSecondZeroInWindow = (!preHungerZero && postHungerZero && preThirstZero) ||
+      (!preThirstZero && postThirstZero && preHungerZero);
+
+    if (evalStart === null) {
+      if (becameSecondZeroInWindow) {
+        evalStart = firstZeroAt;
+      } else if (newlyReachedHungerZeroAt !== null || newlyReachedThirstZeroAt !== null) {
+        const freshZeros = [newlyReachedHungerZeroAt, newlyReachedThirstZeroAt].filter(t => typeof t === 'number' && t > 0);
+        evalStart = freshZeros.length > 0 ? Math.min(...freshZeros) : firstZeroAt;
+      } else {
+        evalStart = firstZeroAt;
+      }
+    }
+
+    let cursor = Math.max(evalStart, firstZeroAt);
+    if (cursor > now) cursor = now;
+
+    const segments = [];
+    if (cursor < now) {
+      if (secondZeroAt > cursor && secondZeroAt < now) {
+        segments.push({ dt: secondZeroAt - cursor, interval: HEALTH_DECAY_SINGLE_MS });
+        segments.push({ dt: now - secondZeroAt, interval: HEALTH_DECAY_BOTH_MS });
+      } else {
+        const activeInterval = (cursor >= secondZeroAt)
+          ? HEALTH_DECAY_BOTH_MS
+          : HEALTH_DECAY_SINGLE_MS;
+        segments.push({ dt: now - cursor, interval: activeInterval });
+      }
+    }
+
+    let progress = typeof state.healthDecayProgress === 'number' && Number.isFinite(state.healthDecayProgress)
+      ? Math.max(0, state.healthDecayProgress)
+      : 0;
+
+    for (let s = 0; s < segments.length; s++) {
+      if (segments[s].dt > 0) {
+        progress += segments[s].dt / segments[s].interval;
+      }
+    }
+
+    const hpLost = Math.floor(progress);
+    const remainderProgress = progress - hpLost;
+
+    if (hpLost > 0) {
+      state.health = Math.max(0, state.health - hpLost);
+      changed = true;
+    }
+
+    if (state.health <= 0) {
+      state.health = 0;
+      state.isGameOver = true;
+      state.healthDecayProgress = 0;
+      state.lastHealthCheckTime = null;
+      if (!state.deathPenaltyApplied) {
+        applyDeathPenalty();
+      }
+      changed = true;
+    } else {
+      if (
+        Math.abs(state.healthDecayProgress - remainderProgress) > 1e-9 ||
+        state.lastHealthCheckTime !== now
+      ) {
+        state.healthDecayProgress = remainderProgress;
+        state.lastHealthCheckTime = now;
+        changed = true;
+      }
+    }
+
+    return changed;
+  }
+
+  function applyDeathPenalty() {
+    if (state.deathPenaltyApplied) return;
+    const lostWood = Math.floor(state.wood * 0.20);
+    const lostStone = Math.floor(state.stone * 0.20);
+    state.wood = Math.max(0, state.wood - lostWood);
+    state.stone = Math.max(0, state.stone - lostStone);
+
+    const occupiedIndices = [];
+    for (let i = 0; i < state.board.length; i++) {
+      if (state.board[i] !== null) {
+        occupiedIndices.push(i);
+      }
+    }
+    const itemsToLose = Math.floor(occupiedIndices.length * 0.20);
+    for (let k = 0; k < itemsToLose; k++) {
+      const randPos = Math.floor(Math.random() * occupiedIndices.length);
+      const boardIdx = occupiedIndices.splice(randPos, 1)[0];
+      state.board[boardIdx] = null;
+    }
+
+    state.lastDeathPenalty = {
+      wood: lostWood,
+      stone: lostStone,
+      boardItemsLost: itemsToLose
+    };
+    state.deathPenaltyApplied = true;
+  }
+
+  function ensureAlive(now = Date.now()) {
+    const changed = syncAllTimers(now);
+    if (state.isGameOver || state.health <= 0) {
+      state.health = 0;
+      state.isGameOver = true;
+      if (!state.deathPenaltyApplied) {
+        applyDeathPenalty();
+      }
+      saveGame();
+      renderBoard();
+      updateUI();
+      return false;
+    }
+    if (changed) saveGame();
+    return true;
+  }
+
+  function spendEnergy(amount) {
+    const now = Date.now();
+    if (!ensureAlive(now)) return false;
+    const maxEnergy = getMaxEnergyForLevel();
+    if (state.energy < amount) return false;
+    const wasFull = state.energy >= maxEnergy;
+    state.energy -= amount;
+    if (wasFull && state.energy < maxEnergy) {
+      state.lastEnergyTime = now;
+    }
+    return true;
+  }
+
+  function fitBoardToViewport() {
+    const boardWrapper = document.getElementById('boardWrapper');
+    const boardEl = document.getElementById('board');
+    if (!boardWrapper || !boardEl) return;
+
+    const wrapperStyle = getComputedStyle(boardWrapper);
+    const wrapPadLeft = parseFloat(wrapperStyle.paddingLeft) || 0;
+    const wrapPadRight = parseFloat(wrapperStyle.paddingRight) || 0;
+    const wrapPadTop = parseFloat(wrapperStyle.paddingTop) || 0;
+    const wrapPadBottom = parseFloat(wrapperStyle.paddingBottom) || 0;
+
+    const availableWidth = Math.max(0, boardWrapper.clientWidth - wrapPadLeft - wrapPadRight);
+    const availableHeight = Math.max(0, boardWrapper.clientHeight - wrapPadTop - wrapPadBottom);
+    const availableSide = Math.min(availableWidth, availableHeight);
+
+    const boardStyle = getComputedStyle(boardEl);
+    const borderLeft = parseFloat(boardStyle.borderLeftWidth) || 3;
+    const borderRight = parseFloat(boardStyle.borderRightWidth) || 3;
+    const borderTop = parseFloat(boardStyle.borderTopWidth) || 3;
+    const borderBottom = parseFloat(boardStyle.borderBottomWidth) || 3;
+
+    const padLeft = parseFloat(boardStyle.paddingLeft) || 8;
+    const padRight = parseFloat(boardStyle.paddingRight) || 8;
+    const padTop = parseFloat(boardStyle.paddingTop) || 8;
+    const padBottom = parseFloat(boardStyle.paddingBottom) || 8;
+
+    const gapH = parseFloat(boardStyle.columnGap) || parseFloat(boardStyle.gap) || 8;
+    const gapV = parseFloat(boardStyle.rowGap) || parseFloat(boardStyle.gap) || 8;
+
+    const effectiveGapH = availableSide < 250 ? Math.min(gapH, 5) : gapH;
+    const effectiveGapV = availableSide < 250 ? Math.min(gapV, 5) : gapV;
+    const effectivePadH = availableSide < 250 ? Math.min(padLeft + padRight, 12) : (padLeft + padRight);
+    const effectivePadV = availableSide < 250 ? Math.min(padTop + padBottom, 12) : (padTop + padBottom);
+    const borderTotalH = borderLeft + borderRight;
+    const borderTotalV = borderTop + borderBottom;
+
+    const minCellSize = 28;
+    let finalGap = Math.max(0, Math.min(effectiveGapH, effectiveGapV));
+    let finalPad = Math.max(0, Math.floor(Math.min(effectivePadH, effectivePadV) / 2));
+
+    let cellFromWidth = (availableWidth - borderTotalH - finalPad * 2 - finalGap * 3) / 4;
+    let cellFromHeight = (availableHeight - borderTotalV - finalPad * 2 - finalGap * 3) / 4;
+    let computedCellSize = Math.min(cellFromWidth, cellFromHeight);
+
+    if (computedCellSize < minCellSize) {
+      finalGap = Math.min(finalGap, 3);
+      finalPad = Math.min(finalPad, 4);
+      cellFromWidth = (availableWidth - borderTotalH - finalPad * 2 - finalGap * 3) / 4;
+      cellFromHeight = (availableHeight - borderTotalV - finalPad * 2 - finalGap * 3) / 4;
+      computedCellSize = Math.min(cellFromWidth, cellFromHeight);
+    }
+
+    const finalCellSize = Math.max(minCellSize, Math.floor(computedCellSize));
+
+    const layoutKey = `${availableWidth}x${availableHeight}|${finalCellSize}|${finalGap}|${finalPad}`;
+    if (layoutKey === lastAppliedLayoutKey) {
+      return;
+    }
+    lastAppliedLayoutKey = layoutKey;
+
+    document.documentElement.style.setProperty('--cell-size', finalCellSize + 'px');
+    document.documentElement.style.setProperty('--board-gap', finalGap + 'px');
+    document.documentElement.style.setProperty('--board-pad', finalPad + 'px');
+  }
+
+  function scheduleFitBoardToViewport(force = false) {
+    if (force) {
+      lastAppliedLayoutKey = '';
+    }
+    if (fitRafId !== null) return;
+    fitRafId = requestAnimationFrame(() => {
+      fitRafId = null;
+      fitBoardToViewport();
+    });
+  }
+
+  function setupBoardViewportObservers() {
+    const boardWrapper = document.getElementById('boardWrapper');
+
+    if (typeof ResizeObserver === 'function' && boardWrapper) {
+      if (boardResizeObserver) {
+        boardResizeObserver.disconnect();
+      }
+      boardResizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const rect = entry.contentRect;
+          const nextW = rect ? Math.round(rect.width) : boardWrapper.clientWidth;
+          const nextH = rect ? Math.round(rect.height) : boardWrapper.clientHeight;
+          if (nextW !== lastObservedWrapperSize.width || nextH !== lastObservedWrapperSize.height) {
+            lastObservedWrapperSize = { width: nextW, height: nextH };
+            scheduleFitBoardToViewport();
+          }
+        }
+      });
+      boardResizeObserver.observe(boardWrapper);
+    }
+
+    window.addEventListener('resize', () => scheduleFitBoardToViewport());
+    window.addEventListener('orientationchange', () => {
+      scheduleFitBoardToViewport(true);
+      requestAnimationFrame(() => scheduleFitBoardToViewport(true));
+    });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => scheduleFitBoardToViewport());
+    }
+  }
+
+  function updateUI() {
+    const now = Date.now();
+    const playerLvl = getPlayerLevel();
+    const maxEnergy = getMaxEnergyForLevel(playerLvl);
+    state.maxEnergy = maxEnergy;
+    state.energy = Math.min(state.energy, maxEnergy);
+    document.getElementById('energyVal').textContent = state.energy;
+    const maxEnergyEl = document.getElementById('maxEnergyVal');
+    if (maxEnergyEl) maxEnergyEl.textContent = maxEnergy;
+    document.getElementById('woodVal').textContent = state.wood;
+    document.getElementById('stoneVal').textContent = state.stone;
+    document.getElementById('campLvlVal').textContent = state.campLevel;
+
+    const playerLvlBadgeEl = document.getElementById('playerLvlBadgeVal');
+    if (playerLvlBadgeEl) playerLvlBadgeEl.textContent = playerLvl;
+
+    const req = getPlayerLevelReq(playerLvl);
+    const hasWood = state.wood >= req.wood;
+    const hasStone = state.stone >= req.stone;
+    const canPlayerLevelUp = !state.isGameOver && hasWood && hasStone;
+
+    const playerReqEl = document.getElementById('playerLevelReqText');
+    if (playerReqEl) {
+      const woodClass = hasWood ? 'req-ok' : 'req-lack';
+      const stoneClass = hasStone ? 'req-ok' : 'req-lack';
+      playerReqEl.innerHTML =
+        `Gerekli: <span class="${woodClass}">${state.wood}/${req.wood}🪵</span> • <span class="${stoneClass}">${state.stone}/${req.stone}🪨</span>`;
+    }
+
+    const btnPlayerLvlUp = document.getElementById('btnPlayerLevelUp');
+    if (btnPlayerLvlUp) {
+      btnPlayerLvlUp.disabled = !canPlayerLevelUp;
+    }
+
+    const campData = CAMP_LEVELS[state.campLevel - 1] || CAMP_LEVELS[0];
+    document.getElementById('campNameSub').textContent = campData.name.split(' ')[0];
+    document.getElementById('campIcon').textContent = campData.icon;
+    document.getElementById('campBadge').textContent = `Sv.${campData.level} ${campData.name}`;
+
+    const energyTimerEl = document.getElementById('energyTimer');
+    if (state.energy >= maxEnergy || !state.lastEnergyTime) {
+      energyTimerEl.textContent = 'Dolu';
+    } else {
+      const remSec = Math.max(1, Math.ceil((ENERGY_REGEN_MS - (now - state.lastEnergyTime)) / 1000));
+      energyTimerEl.textContent = `+1 (${remSec}sn)`;
+    }
+
+    document.getElementById('healthVal').textContent = state.health;
+    document.getElementById('hungerVal').textContent = state.hunger;
+    document.getElementById('thirstVal').textContent = state.thirst;
+
+    document.getElementById('healthBarFill').style.width = `${state.health}%`;
+    document.getElementById('hungerBarFill').style.width = `${state.hunger}%`;
+    document.getElementById('thirstBarFill').style.width = `${state.thirst}%`;
+
+    document.getElementById('healthCard').classList.toggle('critical', state.health <= 25);
+    document.getElementById('hungerCard').classList.toggle('critical', state.hunger <= 25);
+    document.getElementById('thirstCard').classList.toggle('critical', state.thirst <= 25);
+
+    const btnExplore = document.getElementById('btnExplore');
+    btnExplore.disabled = state.isGameOver || state.energy < 2;
+
+    const btnRest = document.getElementById('btnRest');
+    const restSub = document.getElementById('restSub');
+    const restElapsed = now - state.lastRestTime;
+    if (restElapsed < REST_COOLDOWN_MS) {
+      const remRest = Math.ceil((REST_COOLDOWN_MS - restElapsed) / 1000);
+      btnRest.disabled = true;
+      restSub.textContent = `${remRest}sn bekle`;
+    } else {
+      btnRest.disabled = state.isGameOver || state.energy >= maxEnergy;
+      restSub.textContent = `+${REST_GAIN} ⚡ Hazır`;
+    }
+
+    const btnUpgrade = document.getElementById('btnUpgrade');
+    const upgradeSub = document.getElementById('upgradeSub');
+    btnUpgrade.disabled = state.isGameOver;
+
+    const isFireBurning = Boolean(state.campfireBuilt && state.campfireActiveUntil > now);
+    const fireRemSec = isFireBurning ? Math.max(1, Math.ceil((state.campfireActiveUntil - now) / 1000)) : 0;
+
+    const stageFireChip = document.getElementById('stageFireChip');
+    if (stageFireChip) {
+      if (!state.campfireBuilt) {
+        stageFireChip.style.display = 'none';
+      } else {
+        stageFireChip.style.display = 'inline-flex';
+        if (isFireBurning) {
+          const m = Math.floor(fireRemSec / 60);
+          const s = String(fireRemSec % 60).padStart(2, '0');
+          stageFireChip.classList.add('fire-active');
+          stageFireChip.innerHTML = `<span class="campfire-glow">🔥</span> ${m}:${s}`;
+        } else {
+          stageFireChip.classList.remove('fire-active');
+          stageFireChip.textContent = '🪵 Sönük';
+        }
+      }
+    }
+
+    const stageWellChip = document.getElementById('stageWellChip');
+    if (stageWellChip) {
+      if (state.wellLevel <= 0) {
+        stageWellChip.style.display = 'none';
+      } else {
+        stageWellChip.style.display = 'inline-flex';
+        stageWellChip.textContent = `🪣 Sv.${state.wellLevel}`;
+      }
+    }
+
+    const canUpgradeShelter = state.campLevel < CAMP_LEVELS.length && state.wood >= campData.wood && state.stone >= campData.stone;
+    const fireWoodCost = state.campfireBuilt ? CAMPFIRE_RELIGHT_WOOD : CAMPFIRE_BUILD_WOOD;
+    const canActionFire = !isFireBurning && state.wood >= fireWoodCost;
+    const nextWellCfg = state.wellLevel < WELL_LEVELS.length ? WELL_LEVELS[state.wellLevel] : null;
+    const canActionWell = Boolean(nextWellCfg && state.campLevel >= nextWellCfg.reqShelter && state.wood >= nextWellCfg.wood && state.stone >= nextWellCfg.stone);
+
+    if (canUpgradeShelter || canActionFire || canActionWell) {
+      upgradeSub.textContent = '✨ Yapı Hazır!';
+    } else if (isFireBurning) {
+      const m = Math.floor(fireRemSec / 60);
+      const s = String(fireRemSec % 60).padStart(2, '0');
+      upgradeSub.textContent = `🔥 ${m}:${s}`;
+    } else {
+      upgradeSub.textContent = 'Barınak • Ateş • Kuyu';
+    }
+
+    updateCampModalUI(now);
+
+    const modal = document.getElementById('gameOverModal');
+    const wasModalActive = modal.classList.contains('active');
+    if (state.isGameOver || state.health <= 0) {
+      if (!state.deathPenaltyApplied) {
+        applyDeathPenalty();
+        saveGame();
+        renderBoard();
+      }
+      document.getElementById('finalCampLvl').textContent = state.campLevel;
+      document.getElementById('finalWood').textContent = state.wood;
+      document.getElementById('finalStone').textContent = state.stone;
+
+      const penalty = state.lastDeathPenalty || { wood: 0, stone: 0, boardItemsLost: 0 };
+      const penaltyParts = [`-${penalty.wood} 🪵`, `-${penalty.stone} 🪨`];
+      if (penalty.boardItemsLost > 0) {
+        penaltyParts.push(`-${penalty.boardItemsLost} 📦 Eşya`);
+      }
+      const penaltyTextEl = document.getElementById('deathPenaltyText');
+      if (penaltyTextEl) {
+        penaltyTextEl.textContent = `Kaybedilen: ${penaltyParts.join(', ')}`;
+      }
+
+      let reason = 'Sağlığın sıfıra düştü ve adada hayatta kalamadın.';
+      if (state.hunger === 0 && state.thirst === 0) {
+        reason = 'Hem açlık hem de susuzluk sıfıra indiği için gücünü hızla kaybettin.';
+      } else if (state.hunger === 0) {
+        reason = 'Uzun süre aç kaldığın için sağlığın tükendi.';
+      } else if (state.thirst === 0) {
+        reason = 'Susuzluktan bitkin düşerek hayatta kalamadın.';
+      }
+      document.getElementById('gameOverReason').textContent = reason;
+      if (!wasModalActive) {
+        SoundEngine.playGameOver();
+      }
+      modal.classList.add('active');
+    } else {
+      modal.classList.remove('active');
+    }
+  }
+
+  function renderBoard(popIndex = -1) {
+    const boardEl = document.getElementById('board');
+    boardEl.innerHTML = '';
+
+    for (let i = 0; i < 16; i++) {
+      const cellEl = document.createElement('div');
+      cellEl.className = 'cell';
+      cellEl.dataset.index = i;
+
+      const slot = state.board[i];
+      if (slot) {
+        const def = ITEMS[slot.type][slot.level - 1];
+        const itemEl = document.createElement('div');
+        itemEl.className = `item item-${slot.type}` + (i === popIndex ? ' pop-anim' : '');
+
+        const isHarvestable = (slot.type === 'wood' || slot.type === 'stone') && slot.level >= 3;
+        const isConsumable = (slot.type === 'food' || slot.type === 'water');
+        if (isHarvestable || isConsumable) {
+          const dot = document.createElement('div');
+          dot.className = 'item-ready-dot';
+          itemEl.appendChild(dot);
+        }
+
+        const emojiEl = document.createElement('div');
+        emojiEl.className = 'item-emoji';
+        emojiEl.textContent = def.emoji;
+
+        const lvlEl = document.createElement('div');
+        lvlEl.className = 'item-lvl';
+        lvlEl.textContent = `Sv.${slot.level}`;
+
+        itemEl.appendChild(emojiEl);
+        itemEl.appendChild(lvlEl);
+        cellEl.appendChild(itemEl);
+      }
+
+      boardEl.appendChild(cellEl);
+    }
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+
+  function spawnFloatingText(x, y, text, color = '#fff') {
+    const el = document.createElement('div');
+    el.className = 'floating-text';
+    el.textContent = text;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    el.style.color = color;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 950);
+  }
+
+  function getCellIndexFromPoint(clientX, clientY) {
+    const cells = document.querySelectorAll('#board .cell');
+    for (let i = 0; i < cells.length; i++) {
+      const rect = cells[i].getBoundingClientRect();
+      if (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      ) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  function clearCellHighlights() {
+    document.querySelectorAll('#board .cell').forEach(c => {
+      c.classList.remove('highlight-merge', 'highlight-move');
+    });
+  }
+
+  function resetPointerDragState() {
+    if (pointerSession.ghostEl) {
+      pointerSession.ghostEl.remove();
+      pointerSession.ghostEl = null;
+    }
+    document.querySelectorAll('.item.dragging-source').forEach(el => {
+      el.classList.remove('dragging-source');
+    });
+    clearCellHighlights();
+
+    const boardEl = document.getElementById('board');
+    if (boardEl && pointerSession.pointerId !== null) {
+      try {
+        if (boardEl.hasPointerCapture(pointerSession.pointerId)) {
+          boardEl.releasePointerCapture(pointerSession.pointerId);
+        }
+      } catch (e) {}
+    }
+
+    pointerSession.active = false;
+    pointerSession.pointerId = null;
+    pointerSession.startIndex = -1;
+    pointerSession.isDragging = false;
+  }
+
+  function handleTapCell(index, clientX, clientY) {
+    const now = Date.now();
+    if (!ensureAlive(now)) return;
+
+    const slot = state.board[index];
+    if (!slot) return;
+
+    const def = ITEMS[slot.type][slot.level - 1];
+
+    if (slot.type === 'food') {
+      if (state.hunger >= MAX_STAT) {
+        showToast('Karnın tamamen tok! (100/100)');
+        return;
+      }
+      const wasZero = state.hunger <= 0;
+      const before = state.hunger;
+      state.hunger = Math.min(MAX_STAT, state.hunger + def.restore);
+      const gained = state.hunger - before;
+      state.board[index] = null;
+
+      if (wasZero && state.hunger > 0) {
+        state.lastHungerTime = now;
+        state.hungerZeroTime = null;
+        if (state.thirst > 0) {
+          state.healthDecayProgress = 0;
+          state.lastHealthCheckTime = null;
+        } else {
+          state.healthDecayProgress = Math.min(0.999999, state.healthDecayProgress * (HEALTH_DECAY_BOTH_MS / HEALTH_DECAY_SINGLE_MS));
+          state.lastHealthCheckTime = now;
+        }
+      }
+
+      syncAllTimers(now);
+      saveGame();
+      renderBoard();
+      updateUI();
+      SoundEngine.playEat();
+      spawnFloatingText(clientX - 18, clientY - 20, `+${gained} 🍖`, '#ffb703');
+      return;
+    }
+
+    if (slot.type === 'water') {
+      if (state.thirst >= MAX_STAT) {
+        showToast('Susuzluğun tamamen giderilmiş! (100/100)');
+        return;
+      }
+      const wasZero = state.thirst <= 0;
+      const before = state.thirst;
+      state.thirst = Math.min(MAX_STAT, state.thirst + def.restore);
+      const gained = state.thirst - before;
+      state.board[index] = null;
+
+      if (wasZero && state.thirst > 0) {
+        state.lastThirstTime = now;
+        state.thirstZeroTime = null;
+        if (state.hunger > 0) {
+          state.healthDecayProgress = 0;
+          state.lastHealthCheckTime = null;
+        } else {
+          state.healthDecayProgress = Math.min(0.999999, state.healthDecayProgress * (HEALTH_DECAY_BOTH_MS / HEALTH_DECAY_SINGLE_MS));
+          state.lastHealthCheckTime = now;
+        }
+      }
+
+      syncAllTimers(now);
+      saveGame();
+      renderBoard();
+      updateUI();
+      SoundEngine.playDrink();
+      spawnFloatingText(clientX - 18, clientY - 20, `+${gained} 💧`, '#48cae4');
+      return;
+    }
+
+    if ((slot.type === 'wood' || slot.type === 'stone') && slot.level >= 3) {
+      if (slot.type === 'wood') {
+        state.wood += def.harvest;
+        SoundEngine.playHarvestWood();
+        spawnFloatingText(clientX - 18, clientY - 20, `+${def.harvest} 🪵`, '#ffd166');
+      } else {
+        state.stone += def.harvest;
+        SoundEngine.playHarvestStone();
+        spawnFloatingText(clientX - 18, clientY - 20, `+${def.harvest} 🪨`, '#e0e1dd');
+      }
+      state.board[index] = null;
+      saveGame();
+      renderBoard();
+      updateUI();
+    } else {
+      showToast(`${def.name} (Sv.${slot.level}) - Birleştirerek güçlendir!`);
+    }
+  }
+
+  function setupBoardPointers() {
+    const boardEl = document.getElementById('board');
+
+    boardEl.addEventListener('pointerdown', (e) => {
+      if (!ensureAlive(Date.now())) return;
+      if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
+
+      const now = Date.now();
+      if (now - lastPointerActionAt < 120) return;
+
+      if (pointerSession.active) {
+        resetPointerDragState();
+      }
+
+      const idx = getCellIndexFromPoint(e.clientX, e.clientY);
+      if (idx === -1 || !state.board[idx]) return;
+
+      pointerSession.active = true;
+      pointerSession.pointerId = e.pointerId;
+      pointerSession.startIndex = idx;
+      pointerSession.startX = e.clientX;
+      pointerSession.startY = e.clientY;
+      pointerSession.isDragging = false;
+
+      try {
+        boardEl.setPointerCapture(e.pointerId);
+      } catch (err) {}
+    });
+
+    boardEl.addEventListener('pointermove', (e) => {
+      if (!pointerSession.active || e.pointerId !== pointerSession.pointerId) return;
+
+      const dx = e.clientX - pointerSession.startX;
+      const dy = e.clientY - pointerSession.startY;
+      const dist = Math.hypot(dx, dy);
+
+      if (!pointerSession.isDragging && dist > 10) {
+        pointerSession.isDragging = true;
+        const sourceSlot = state.board[pointerSession.startIndex];
+        if (!sourceSlot) {
+          resetPointerDragState();
+          return;
+        }
+
+        const cellEl = boardEl.querySelector(`.cell[data-index="${pointerSession.startIndex}"] .item`);
+        if (cellEl) cellEl.classList.add('dragging-source');
+
+        const def = ITEMS[sourceSlot.type][sourceSlot.level - 1];
+        SoundEngine.playDragStart();
+        const ghost = document.createElement('div');
+        ghost.className = `drag-ghost item item-${sourceSlot.type}`;
+        ghost.innerHTML = `<div class="item-emoji">${def.emoji}</div><div class="item-lvl">Sv.${sourceSlot.level}</div>`;
+        document.body.appendChild(ghost);
+        pointerSession.ghostEl = ghost;
+      }
+
+      if (pointerSession.isDragging && pointerSession.ghostEl) {
+        pointerSession.ghostEl.style.left = `${e.clientX}px`;
+        pointerSession.ghostEl.style.top = `${e.clientY}px`;
+
+        clearCellHighlights();
+        const overIdx = getCellIndexFromPoint(e.clientX, e.clientY);
+        if (overIdx !== -1 && overIdx !== pointerSession.startIndex) {
+          const overCell = boardEl.querySelector(`.cell[data-index="${overIdx}"]`);
+          const srcItem = state.board[pointerSession.startIndex];
+          const dstItem = state.board[overIdx];
+          if (overCell && srcItem) {
+            if (
+              dstItem &&
+              dstItem.type === srcItem.type &&
+              dstItem.level === srcItem.level &&
+              srcItem.level < ITEMS[srcItem.type].length
+            ) {
+              overCell.classList.add('highlight-merge');
+            } else {
+              overCell.classList.add('highlight-move');
+            }
+          }
+        }
+      }
+    });
+
+    boardEl.addEventListener('pointerup', (e) => {
+      if (!pointerSession.active || e.pointerId !== pointerSession.pointerId) return;
+
+      const startIndex = pointerSession.startIndex;
+      const movedDist = Math.hypot(e.clientX - pointerSession.startX, e.clientY - pointerSession.startY);
+      const wasDragging = pointerSession.isDragging || movedDist > 10;
+
+      const targetIndex = getCellIndexFromPoint(e.clientX, e.clientY);
+
+      resetPointerDragState();
+      lastPointerActionAt = Date.now();
+
+      if (!ensureAlive(Date.now()) || startIndex === -1) return;
+
+      if (!wasDragging) {
+        handleTapCell(startIndex, e.clientX, e.clientY);
+        return;
+      }
+
+      if (targetIndex === -1 || targetIndex === startIndex) {
+        return;
+      }
+
+      const srcItem = state.board[startIndex];
+      const dstItem = state.board[targetIndex];
+      if (!srcItem) return;
+
+      const maxLvl = ITEMS[srcItem.type].length;
+      if (
+        dstItem &&
+        dstItem.type === srcItem.type &&
+        dstItem.level === srcItem.level &&
+        srcItem.level < maxLvl
+      ) {
+        const nextLevel = srcItem.level + 1;
+        state.board[targetIndex] = { type: srcItem.type, level: nextLevel };
+        state.board[startIndex] = null;
+        const newDef = ITEMS[srcItem.type][nextLevel - 1];
+        SoundEngine.playMerge(nextLevel);
+        spawnFloatingText(e.clientX - 24, e.clientY - 22, `✨ ${newDef.name}`, '#80ffdb');
+        saveGame();
+        renderBoard(targetIndex);
+        updateUI();
+      } else {
+        state.board[targetIndex] = srcItem;
+        state.board[startIndex] = dstItem || null;
+        SoundEngine.playDropPlace();
+        saveGame();
+        renderBoard(targetIndex);
+      }
+    });
+
+    boardEl.addEventListener('pointercancel', (e) => {
+      if (pointerSession.active && e.pointerId === pointerSession.pointerId) {
+        resetPointerDragState();
+      }
+    });
+
+    boardEl.addEventListener('lostpointercapture', () => {
+      if (pointerSession.active) {
+        resetPointerDragState();
+      }
+    });
+  }
+
+  function exploreAction() {
+    if (!ensureAlive(Date.now())) return;
+    const emptyIndices = [];
+    for (let i = 0; i < 16; i++) {
+      if (!state.board[i]) emptyIndices.push(i);
+    }
+
+    if (emptyIndices.length === 0) {
+      showToast('Tahta dolu! Önce eşyaları birleştir veya topla.');
+      return;
+    }
+
+    if (!spendEnergy(2)) {
+      showToast('Yeterli enerjin yok!');
+      return;
+    }
+
+    const pickIdx = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+    const roll = Math.random();
+    let type = 'wood';
+    if (roll < 0.28) type = 'wood';
+    else if (roll < 0.56) type = 'stone';
+    else if (roll < 0.78) type = 'food';
+    else type = 'water';
+
+    const level = (state.campLevel >= 3 && Math.random() < 0.18) ? 2 : 1;
+    state.board[pickIdx] = { type, level };
+
+    SoundEngine.playExplore();
+    saveGame();
+    renderBoard(pickIdx);
+    updateUI();
+  }
+
+  function restAction() {
+    const now = Date.now();
+    if (!ensureAlive(now)) return;
+    const maxEnergy = getMaxEnergyForLevel();
+
+    if (now - state.lastRestTime < REST_COOLDOWN_MS) {
+      showToast('Dinlenmek için biraz daha beklemelisin.');
+      return;
+    }
+    if (state.energy >= maxEnergy) {
+      showToast('Enerjin zaten dolu!');
+      return;
+    }
+
+    state.energy = Math.min(maxEnergy, state.energy + REST_GAIN);
+    state.lastRestTime = now;
+    if (state.energy >= maxEnergy) {
+      state.lastEnergyTime = null;
+    }
+
+    SoundEngine.playRest();
+    saveGame();
+    updateUI();
+    showToast(`Ateş başında dinlendin (+${REST_GAIN} ⚡)`);
+  }
+
+  function formatDurationShort(sec) {
+    const s = Math.max(0, Math.ceil(sec));
+    const mins = Math.floor(s / 60);
+    const rem = s % 60;
+    return mins > 0 ? `${mins}dk ${String(rem).padStart(2, '0')}sn` : `${rem}sn`;
+  }
+
+  function updateCampModalUI(now = Date.now()) {
+    const campModal = document.getElementById('campModal');
+    if (!campModal) return;
+
+    const modalWood = document.getElementById('modalWoodVal');
+    const modalStone = document.getElementById('modalStoneVal');
+    if (modalWood) modalWood.textContent = state.wood;
+    if (modalStone) modalStone.textContent = state.stone;
+
+    const campData = CAMP_LEVELS[state.campLevel - 1] || CAMP_LEVELS[0];
+    document.getElementById('shelterCardIcon').textContent = campData.icon;
+    document.getElementById('shelterCardName').textContent = `Barınak • ${campData.name}`;
+    document.getElementById('shelterCardLvl').textContent = `Seviye ${state.campLevel} / ${CAMP_LEVELS.length}`;
+    const slowPct = Math.round((campData.survivalBonus || 0) * 100);
+    document.getElementById('shelterPerkText').textContent =
+      `Avantaj: -%${slowPct} açlık/susuzluk tüketimi • ${campData.unlockText}`;
+
+    const btnShelter = document.getElementById('btnBuildShelter');
+    if (state.campLevel >= CAMP_LEVELS.length) {
+      btnShelter.disabled = true;
+      btnShelter.textContent = '👑 Maksimum Barınak Seviyesi';
+      document.getElementById('shelterStatusPill').textContent = 'Maksimum';
+    } else {
+      const canAffordShelter = !state.isGameOver && state.wood >= campData.wood && state.stone >= campData.stone;
+      btnShelter.disabled = !canAffordShelter;
+      btnShelter.textContent = `🔨 Barınağı Geliştir (${campData.wood}🪵 ${campData.stone}🪨)`;
+      document.getElementById('shelterStatusPill').textContent = `Sv.${state.campLevel} Aktif`;
+    }
+
+    const isFireBurning = Boolean(state.campfireBuilt && state.campfireActiveUntil > now);
+    const fireIconEl = document.getElementById('campfireCardIcon');
+    const fireSubEl = document.getElementById('campfireCardSub');
+    const firePillEl = document.getElementById('campfireStatusPill');
+    const fireProgWrap = document.getElementById('campfireProgressWrap');
+    const fireProgFill = document.getElementById('campfireProgressFill');
+    const firePerkEl = document.getElementById('campfirePerkText');
+    const btnFire = document.getElementById('btnActionCampfire');
+
+    if (!state.campfireBuilt) {
+      fireIconEl.textContent = '🪵';
+      fireSubEl.textContent = 'İnşa Edilmedi';
+      firePillEl.textContent = 'İnşa Bekliyor';
+      firePillEl.className = 'struct-status-pill';
+      fireProgWrap.style.display = 'none';
+      firePerkEl.textContent = 'Avantaj: Yanarken -%30 açlık/susuzluk + yavaş sağlık yenileme';
+      btnFire.disabled = state.isGameOver || state.wood < CAMPFIRE_BUILD_WOOD;
+      btnFire.textContent = `🔥 Kamp Ateşi İnşa Et (${CAMPFIRE_BUILD_WOOD}🪵)`;
+    } else if (isFireBurning) {
+      const remMs = Math.max(0, state.campfireActiveUntil - now);
+      const pct = Math.min(100, Math.max(0, (remMs / CAMPFIRE_DURATION_MS) * 100));
+      fireIconEl.textContent = '🔥';
+      fireSubEl.textContent = `Aktif • Kalan: ${formatDurationShort(remMs / 1000)}`;
+      firePillEl.textContent = '🔥 Yanıyor';
+      firePillEl.className = 'struct-status-pill burning';
+      fireProgWrap.style.display = 'block';
+      fireProgFill.style.width = `${pct}%`;
+      firePerkEl.textContent = "Aktif Koruma: -%30 açlık/susuzluk + 20sn'de +1 ❤️ (tokken)";
+      btnFire.disabled = true;
+      btnFire.textContent = `🔥 Ateş Yanıyor (${formatDurationShort(remMs / 1000)})`;
+    } else {
+      fireIconEl.textContent = '🪵';
+      fireSubEl.textContent = 'Ateş Söndü (Odun Gerekli)';
+      firePillEl.textContent = 'Sönük';
+      firePillEl.className = 'struct-status-pill';
+      fireProgWrap.style.display = 'none';
+      firePerkEl.textContent = 'Ateş söndü! Yeniden yakmak için odun ekle.';
+      btnFire.disabled = state.isGameOver || state.wood < CAMPFIRE_RELIGHT_WOOD;
+      btnFire.textContent = `🔥 Yeniden Yak (${CAMPFIRE_RELIGHT_WOOD}🪵)`;
+    }
+
+    const wellCard = document.getElementById('wellCard');
+    const wellSubEl = document.getElementById('wellCardSub');
+    const wellPillEl = document.getElementById('wellStatusPill');
+    const wellProgWrap = document.getElementById('wellProgressWrap');
+    const wellProgFill = document.getElementById('wellProgressFill');
+    const wellPerkEl = document.getElementById('wellPerkText');
+    const btnWell = document.getElementById('btnActionWell');
+
+    if (state.wellLevel === 0) {
+      const firstWell = WELL_LEVELS[0];
+      const isUnlocked = state.campLevel >= firstWell.reqShelter;
+      wellCard.classList.toggle('locked', !isUnlocked);
+      wellProgWrap.style.display = 'none';
+
+      if (!isUnlocked) {
+        wellSubEl.textContent = `Kilitli (Barınak Sv.${firstWell.reqShelter} Gerekli)`;
+        wellPillEl.textContent = `🔒 Sv.${firstWell.reqShelter} Barınak`;
+        wellPillEl.className = 'struct-status-pill locked';
+        wellPerkEl.textContent = `Kilitli: Önce Barınağı Seviye ${firstWell.reqShelter}'ye yükselt`;
+        btnWell.disabled = true;
+        btnWell.textContent = `🔒 Barınak Sv.${firstWell.reqShelter} Gerekli`;
+      } else {
+        wellSubEl.textContent = 'İnşaya Hazır';
+        wellPillEl.textContent = 'Kilidi Açık';
+        wellPillEl.className = 'struct-status-pill';
+        wellPerkEl.textContent = `Üretim: Her ${Math.round(firstWell.intervalMs / 1000)} saniyede 1x 💧 Çiy Damlası`;
+        btnWell.disabled = state.isGameOver || state.wood < firstWell.wood || state.stone < firstWell.stone;
+        btnWell.textContent = `🪣 Su Kuyusu İnşa Et (${firstWell.wood}🪵 ${firstWell.stone}🪨)`;
+      }
+    } else {
+      wellCard.classList.remove('locked');
+      const curWell = WELL_LEVELS[state.wellLevel - 1] || WELL_LEVELS[0];
+      const waterDef = ITEMS.water[curWell.waterLevel - 1];
+      const remMs = Math.max(0, curWell.intervalMs - (state.wellProgressMs || 0));
+      const pct = Math.min(100, Math.max(0, ((state.wellProgressMs || 0) / curWell.intervalMs) * 100));
+
+      wellSubEl.textContent = `Seviye ${state.wellLevel} / ${WELL_LEVELS.length} • ${Math.round(curWell.intervalMs / 1000)}sn/üretim`;
+      wellPillEl.textContent = `💧 ${Math.ceil(remMs / 1000)}sn`;
+      wellPillEl.className = 'struct-status-pill active';
+      wellProgWrap.style.display = 'block';
+      wellProgFill.style.width = `${pct}%`;
+      wellPerkEl.textContent = `Üretim: Her ${Math.round(curWell.intervalMs / 1000)}sn'de 1x ${waterDef.emoji} ${waterDef.name}`;
+
+      if (state.wellLevel >= WELL_LEVELS.length) {
+        btnWell.disabled = true;
+        btnWell.textContent = '💧 Maksimum Kuyu Seviyesi';
+      } else {
+        const nextWell = WELL_LEVELS[state.wellLevel];
+        if (state.campLevel < nextWell.reqShelter) {
+          btnWell.disabled = true;
+          btnWell.textContent = `🔒 Sv.${nextWell.reqShelter} Barınak Gerekli`;
+        } else {
+          btnWell.disabled = state.isGameOver || state.wood < nextWell.wood || state.stone < nextWell.stone;
+          btnWell.textContent = `⬆️ Kuyuyu Geliştir (${nextWell.wood}🪵 ${nextWell.stone}🪨)`;
+        }
+      }
+    }
+  }
+
+  function openCampModal() {
+    const now = Date.now();
+    if (!ensureAlive(now)) return;
+    updateCampModalUI(now);
+    const modal = document.getElementById('campModal');
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeCampModal() {
+    const modal = document.getElementById('campModal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function upgradeShelterAction() {
+    const now = Date.now();
+    if (!ensureAlive(now)) return;
+    if (state.campLevel >= CAMP_LEVELS.length) return;
+
+    const currentCamp = CAMP_LEVELS[state.campLevel - 1];
+    if (state.wood < currentCamp.wood || state.stone < currentCamp.stone) {
+      showToast('Yeterli odun veya taşın yok!');
+      return;
+    }
+
+    state.wood -= currentCamp.wood;
+    state.stone -= currentCamp.stone;
+    state.campLevel += 1;
+    state.health = Math.min(MAX_STAT, state.health + 15);
+
+    const iconEl = document.getElementById('campIcon');
+    if (iconEl) {
+      iconEl.style.transform = 'scale(1.28)';
+      setTimeout(() => { iconEl.style.transform = 'scale(1)'; }, 300);
+    }
+
+    SoundEngine.playCampUpgrade();
+    saveGame();
+    updateUI();
+    const nextCamp = CAMP_LEVELS[state.campLevel - 1];
+    showToast(`🎉 Barınak Gelişti: ${nextCamp.name}! (+15 ❤️)`);
+  }
+
+  function buildOrRelightCampfireAction() {
+    const now = Date.now();
+    if (!ensureAlive(now)) return;
+
+    const isFireBurning = Boolean(state.campfireBuilt && state.campfireActiveUntil > now);
+    if (isFireBurning) {
+      showToast('Kamp ateşi zaten yanıyor!');
+      return;
+    }
+
+    const cost = state.campfireBuilt ? CAMPFIRE_RELIGHT_WOOD : CAMPFIRE_BUILD_WOOD;
+    if (state.wood < cost) {
+      showToast(`Yeterli odun yok! (${cost}🪵 gerekli)`);
+      return;
+    }
+
+    const wasBuilt = state.campfireBuilt;
+    state.wood -= cost;
+    state.campfireBuilt = true;
+    state.campfireActiveUntil = now + CAMPFIRE_DURATION_MS;
+    state.lastCampfireCheckTime = now;
+    state.campfireHealProgress = 0;
+
+    SoundEngine.playRest();
+    saveGame();
+    updateUI();
+    showToast(wasBuilt ? '🔥 Kamp ateşi yeniden yakıldı! (3 dk)' : '🔥 Kamp ateşi inşa edildi ve yakıldı!');
+  }
+
+  function buildOrUpgradeWellAction() {
+    const now = Date.now();
+    if (!ensureAlive(now)) return;
+
+    if (state.wellLevel >= WELL_LEVELS.length) {
+      showToast('Su kuyusu maksimum seviyede!');
+      return;
+    }
+
+    const targetWell = WELL_LEVELS[state.wellLevel];
+    if (state.campLevel < targetWell.reqShelter) {
+      showToast(`Önce Barınağı Seviye ${targetWell.reqShelter}'ye yükselt!`);
+      return;
+    }
+
+    if (state.wood < targetWell.wood || state.stone < targetWell.stone) {
+      showToast('Yeterli odun veya taşın yok!');
+      return;
+    }
+
+    const isFirstBuild = state.wellLevel === 0;
+    state.wood -= targetWell.wood;
+    state.stone -= targetWell.stone;
+    state.wellLevel += 1;
+    if (isFirstBuild) {
+      state.lastWellTickTime = now;
+      state.wellProgressMs = 0;
+    }
+
+    SoundEngine.playCampUpgrade();
+    saveGame();
+    updateUI();
+    showToast(isFirstBuild ? '🪣 Su Kuyusu inşa edildi! Otomatik su üretecek.' : `💧 Su Kuyusu Sv.${state.wellLevel} oldu!`);
+  }
+
+  function resetGameAfterDeath() {
+    const now = Date.now();
+    resetPointerDragState();
+    const maxEnergy = getMaxEnergyForLevel();
+
+    state.health = 50;
+    state.hunger = 50;
+    state.thirst = 50;
+    state.energy = Math.min(25, maxEnergy);
+    state.lastEnergyTime = state.energy < maxEnergy ? now : null;
+
+    state.lastHungerTime = now;
+    state.lastThirstTime = now;
+    state.hungerZeroTime = null;
+    state.thirstZeroTime = null;
+    state.healthDecayProgress = 0;
+    state.lastHealthCheckTime = null;
+    state.isGameOver = false;
+    state.deathPenaltyApplied = false;
+
+    closeCampModal();
+    saveGame();
+    renderBoard();
+    updateUI();
+    showToast(`✨ Yeniden doğdun! (❤️50 🍖50 💧50 ⚡${state.energy})`);
+  }
+
+  function initGame() {
+    if (isInitialized) return;
+    isInitialized = true;
+
+    const castawayEl = document.getElementById('castawayCharacter');
+    let castawayGlanceTimer = null;
+    let castawayClearTimer = null;
+
+    const scheduleCastawayGlance = () => {
+      if (!castawayEl) return;
+      clearTimeout(castawayGlanceTimer);
+      const delayMs = 6500 + Math.floor(Math.random() * 5500);
+      castawayGlanceTimer = setTimeout(() => {
+        if (!document.hidden) {
+          castawayEl.classList.remove('is-glancing');
+          void castawayEl.offsetWidth;
+          castawayEl.classList.add('is-glancing');
+          clearTimeout(castawayClearTimer);
+          castawayClearTimer = setTimeout(() => {
+            castawayEl.classList.remove('is-glancing');
+          }, 1150);
+        }
+        scheduleCastawayGlance();
+      }, delayMs);
+    };
+    scheduleCastawayGlance();
+
+    setupAudioControls();
+    loadGame();
+    setupBoardViewportObservers();
+    fitBoardToViewport();
+    renderBoard();
+    updateUI();
+    setupBoardPointers();
+
+    const playerLvlUpBtn = document.getElementById('btnPlayerLevelUp');
+    if (playerLvlUpBtn) {
+      playerLvlUpBtn.addEventListener('click', levelUpPlayerAction);
+    }
+
+    document.getElementById('btnExplore').addEventListener('click', exploreAction);
+    document.getElementById('btnRest').addEventListener('click', restAction);
+    document.getElementById('btnUpgrade').addEventListener('click', openCampModal);
+    document.getElementById('btnCloseCampModal').addEventListener('click', closeCampModal);
+    document.getElementById('campModal').addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'campModal') {
+        closeCampModal();
+      }
+    });
+    document.getElementById('btnBuildShelter').addEventListener('click', upgradeShelterAction);
+    document.getElementById('btnActionCampfire').addEventListener('click', buildOrRelightCampfireAction);
+    document.getElementById('btnActionWell').addEventListener('click', buildOrUpgradeWellAction);
+    document.getElementById('btnRestart').addEventListener('click', resetGameAfterDeath);
+
+    const openResetBtn = document.getElementById('btnOpenResetModal');
+    if (openResetBtn) {
+      openResetBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openResetConfirmModal();
+      });
+    }
+    const cancelResetBtn = document.getElementById('btnCancelReset');
+    if (cancelResetBtn) {
+      cancelResetBtn.addEventListener('click', closeResetConfirmModal);
+    }
+    const confirmResetBtn = document.getElementById('btnConfirmReset');
+    if (confirmResetBtn) {
+      confirmResetBtn.addEventListener('click', resetEntireGame);
+    }
+    const resetConfirmModal = document.getElementById('resetConfirmModal');
+    if (resetConfirmModal) {
+      resetConfirmModal.addEventListener('click', (e) => {
+        if (e.target && e.target.id === 'resetConfirmModal') {
+          closeResetConfirmModal();
+        }
+      });
+    }
+
+    window.addEventListener('blur', resetPointerDragState);
+
+    function pauseSurvivalTimers(now = Date.now()) {
+      syncAllTimers(now);
+      if (!state.isGameOver && state.health > 0) {
+        state.lastHungerTime = now;
+        state.lastThirstTime = now;
+        state.hungerZeroTime = state.hunger <= 0 ? now : null;
+        state.thirstZeroTime = state.thirst <= 0 ? now : null;
+        if (state.hunger <= 0 || state.thirst <= 0) {
+          state.lastHealthCheckTime = now;
+        } else {
+          state.healthDecayProgress = 0;
+          state.lastHealthCheckTime = null;
+        }
+        if (state.campfireBuilt && state.campfireActiveUntil > now) {
+          state.lastCampfireCheckTime = now;
+        }
+        if (state.wellLevel > 0) {
+          state.lastWellTickTime = now;
+        }
+      }
+    }
+
+    function resumeSurvivalTimers(now = Date.now()) {
+      if (!state.isGameOver && state.health > 0) {
+        state.lastHungerTime = now;
+        state.lastThirstTime = now;
+        state.hungerZeroTime = state.hunger <= 0 ? now : null;
+        state.thirstZeroTime = state.thirst <= 0 ? now : null;
+        if (state.hunger <= 0 || state.thirst <= 0) {
+          state.lastHealthCheckTime = now;
+        } else {
+          state.healthDecayProgress = 0;
+          state.lastHealthCheckTime = null;
+        }
+        if (state.campfireBuilt && state.campfireActiveUntil > now) {
+          state.lastCampfireCheckTime = now;
+        }
+        if (state.wellLevel > 0) {
+          state.lastWellTickTime = now;
+        }
+      }
+      syncAllTimers(now);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        resetPointerDragState();
+        SoundEngine.handleVisibility(true);
+        pauseSurvivalTimers(Date.now());
+        saveGame();
+      } else {
+        resumeSurvivalTimers(Date.now());
+        saveGame();
+        SoundEngine.handleVisibility(false);
+        scheduleFitBoardToViewport(true);
+        renderBoard();
+        updateUI();
+      }
+    });
+
+    window.addEventListener('pagehide', () => {
+      resetPointerDragState();
+      SoundEngine.dispose();
+      pauseSurvivalTimers(Date.now());
+      saveGame();
+    });
+
+    window.addEventListener('beforeunload', () => {
+      SoundEngine.dispose();
+      pauseSurvivalTimers(Date.now());
+      saveGame();
+    });
+
+    setInterval(() => {
+      const now = Date.now();
+      if (document.hidden) {
+        pauseSurvivalTimers(now);
+        saveGame();
+        return;
+      }
+      const wasAlive = !state.isGameOver && state.health > 0;
+      const changed = syncAllTimers(now);
+      if (state._wellProducedBoardUpdate) {
+        state._wellProducedBoardUpdate = false;
+        renderBoard();
+        showToast('💧 Su Kuyusu envantere su ekledi!');
+      }
+      if (changed) {
+        saveGame();
+        if (wasAlive && (state.isGameOver || state.health <= 0)) {
+          closeCampModal();
+          renderBoard();
+        }
+      }
+      updateUI();
+    }, 500);
+  }
+
+  function getLocalDateKey(date = new Date()) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function computeDailyReward() {
+    const lvl = getPlayerLevel();
+    const campScale = Math.max(1, state.campLevel || 1);
+    const tierMult = 1 + Math.min(4, Math.floor((lvl - 1) / 5)) * 0.35 + (campScale - 1) * 0.25;
+    const woodReward = Math.round(8 * tierMult);
+    const stoneReward = Math.round(6 * tierMult);
+    const boxChain = (lvl % 2 === 1) ? 'wood' : 'stone';
+    const boxLevel = Math.min(6, 2 + Math.floor((campScale - 1) / 2));
+    return {
+      wood: woodReward,
+      stone: stoneReward,
+      boxType: boxChain,
+      boxLevel
+    };
+  }
+
+  function checkAndPrepareDailyReward() {
+    if (state.isGameOver || state.health <= 0) return;
+    const todayKey = getLocalDateKey(new Date());
+    if (state.lastDailyRewardDate === todayKey) return;
+
+    const reward = computeDailyReward();
+    pendingDailyReward = { dateKey: todayKey, reward };
+
+    const boxDef = ITEMS[reward.boxType][reward.boxLevel - 1] || ITEMS.wood[1];
+    const summaryEl = document.getElementById('dailyRewardSummary');
+    if (summaryEl) {
+      summaryEl.innerHTML =
+        `<div>🪵 +${reward.wood} Odun • 🪨 +${reward.stone} Taş</div>` +
+        `<div>${boxDef.emoji} +1 ${boxDef.name} (Sv.${reward.boxLevel})</div>`;
+    }
+    const modal = document.getElementById('dailyRewardModal');
+    if (modal) modal.classList.add('active');
+  }
+
+  function claimDailyReward() {
+    if (!pendingDailyReward) {
+      const modal = document.getElementById('dailyRewardModal');
+      if (modal) modal.classList.remove('active');
+      return;
+    }
+
+    const { dateKey, reward } = pendingDailyReward;
+    if (state.lastDailyRewardDate === dateKey) {
+      pendingDailyReward = null;
+      const modal = document.getElementById('dailyRewardModal');
+      if (modal) modal.classList.remove('active');
+      return;
+    }
+
+    state.wood += reward.wood;
+    state.stone += reward.stone;
+    state.lastDailyRewardDate = dateKey;
+
+    let placedBoxIndex = -1;
+    const emptyIndices = [];
+    for (let i = 0; i < 16; i++) {
+      if (!state.board[i]) emptyIndices.push(i);
+    }
+    if (emptyIndices.length > 0) {
+      placedBoxIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+      state.board[placedBoxIndex] = { type: reward.boxType, level: reward.boxLevel };
+    }
+
+    pendingDailyReward = null;
+    const modal = document.getElementById('dailyRewardModal');
+    if (modal) modal.classList.remove('active');
+
+    SoundEngine.playCampUpgrade();
+    saveGame();
+    renderBoard(placedBoxIndex);
+    updateUI();
+    showToast(`🎁 Günlük ödül alındı: +${reward.wood}🪵 +${reward.stone}🪨`);
+  }
+
+  const claimDailyBtn = document.getElementById('btnClaimDailyReward');
+  if (claimDailyBtn) {
+    claimDailyBtn.addEventListener('click', claimDailyReward);
+  }
+
+  const origInitGame = initGame;
+  initGame = function() {
+    origInitGame();
+    checkAndPrepareDailyReward();
+  };
+
+  if (document.readyState === 'interactive' || document.readyState === 'complete') {
+    initGame();
+  } else {
+    document.addEventListener('DOMContentLoaded', initGame, { once: true });
+  }
+})();
+</script>
+</body>
+</html>
